@@ -240,9 +240,9 @@
               <h3 class="text-base font-semibold text-slate-800">FAQ Cards</h3>
               <p class="text-xs text-slate-400 mt-0.5">Set up quick-reply FAQ cards for visitors — up to 4 cards, each shown live in the preview. Card count and question count are shared across all languages.</p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <span id="faqCountBadge" class="text-[11px] text-slate-400"></span>
+            <div class="flex flex-col items-end gap-2.5 shrink-0">
               <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg" id="faqLangSwitcher"></div>
+              <span id="faqCountBadge" class="text-[11px] text-slate-400"></span>
             </div>
           </div>
           <div class="flex items-center gap-2 pt-1 pb-3">
@@ -560,12 +560,12 @@ const BRAND = { id:'brandColor', icon:'brush', label:'Brand Color', desc:'One co
 // One-way "linked" sync: setting a quick color pushes into every target var at once, but each
 // target field remains individually overridable afterward via its own row (no permanent binding).
 const QUICK_COLORS = [
-  { id:'primary', label:'主視覺色 Primary', desc:'Welcome Screen background, Welcome Card, Header, FAQ card header, user message bubble', def:'#1a2540',
+  { id:'primary', label:'Primary', def:'#1a2540',
     targets:['--header-bg','--card-bg','--botmsg-text','--botmsg-name','--input-send','--input-text','--launcher-bg','--user-bg','--faq-header','--faq-nav'] },
-  { id:'accent', label:'點綴色 Accent', desc:'Bot Icon background, Start Chat button, FAQ question text', def:'#c4a060',
+  { id:'accent', label:'Accent', def:'#c4a060',
     targets:['--brand','--header-icon','--welcome-start','--faq-link'] },
-  { id:'welcomeText', label:'Welcome Message 文字顏色', desc:'Welcome Screen subtitle text', def:'#8fa0c0',
-    targets:['--welcome-subtitle'] },
+  { id:'welcomeText', label:'Welcome Message', def:'#8fa0c0',
+    targets:['--welcome-subtitle','--card-body'] },
 ];
 function lightenHex(hex, percent){
   hex = (hex||'').replace('#','');
@@ -596,12 +596,9 @@ function quickColorRowHTML(qc){
   const current = quickColorCurrent(qc);
   return `
   <div class="space-y-1.5 border border-slate-200 rounded-xl p-3.5">
-    <div class="flex items-start justify-between">
-      <div class="min-h-[32px]">
-        <p class="text-[12.5px] font-medium text-slate-700">${qc.label}</p>
-        <p class="text-[10.5px] text-slate-400">${qc.desc}</p>
-      </div>
-      <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+    <div class="flex items-center justify-between">
+      <p class="text-[12.5px] font-medium text-slate-700">${qc.label}</p>
+      <div class="flex items-center gap-1.5 shrink-0">
         <div class="w-5 h-5 rounded border border-slate-200" style="background-color:${current}"></div>
         <button onclick="resetQuickColor('${qc.id}')" class="text-[10px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">Reset</button>
       </div>
