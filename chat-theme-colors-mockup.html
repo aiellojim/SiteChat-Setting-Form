@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>Aiello SiteChat Settings</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    /* Defaults below mirror the "demo2" organization on eb-console (theme defaults, no overrides) */
+    --brand:#c4a060;
+    --header-bg:#1a2540; --header-title:#ffffff; --header-icon:#c4a060; --header-status:#8fa0c0;
+    --welcome-bg:linear-gradient(160deg, #1a2540 0%, #243058 100%); --welcome-start:#c4a060; --welcome-title:#ffffff; --welcome-subtitle:#8fa0c0;
+    --canvas-bg:#f4f5f7;
+    --card-bg:#1a2540; --card-title:#ffffff; --card-body:#ffffff;
+    --botmsg-bg:#ffffff; --botmsg-text:#1a2540; --botmsg-name:#1a2540;
+    --input-toolbar:#ffffff; --input-field:#f4f5f7; --input-send:#1a2540; --input-text:#1a2540; --input-placeholder:#8fa0c0; --input-border:#dde1ea;
+    --launcher-bg:#1a2540; --launcher-icon:#ffffff;
+    --hint-bg:#ffffff; --hint-text:#1e293b;
+    --user-bg:#1a2540; --user-text:#ffffff;
+    --faq-body:#ffffff; --faq-header:#1a2540; --faq-headertext:#ffffff; --faq-link:#9a6f20; --faq-related:#1f2937; --faq-nav:#1a2540;
+    --destructive-btn:#ef4444;
+    --fb-timestamp:#8fa0c0; --fb-up:#9a6f20; --fb-down:#e05555; --fb-spinner:#9a6f20; --fb-spinner-track:#dde1ea;
+    --text-scale:15px;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;}
+  .em-scale{font-size:var(--text-scale);}
+  .highlight-ring{outline:2px solid #6366f1;outline-offset:2px;border-radius:8px;box-shadow:0 0 0 4px rgba(99,102,241,.15);transition:box-shadow .15s,outline-color .15s;}
+  .row-card{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;transition:all .2s;}
+  .row-card.open{border-color:#818cf8;box-shadow:0 0 0 2px rgba(129,140,248,.25);}
+  .preset-swatch{width:24px;height:24px;border-radius:6px;border-width:2px;border-color:transparent;cursor:pointer;transition:transform .1s;}
+  .preset-swatch:hover{transform:scale(1.08);}
+  .preset-swatch.selected{border-color:#1e293b;}
+  .field-dot{width:14px;height:14px;border-radius:9999px;border:1px solid white;box-shadow:0 1px 2px rgba(0,0,0,.15);}
+  .phone-bezel{position:relative;width:280px;height:600px;margin:0 auto;}
+  .phone-notch{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:64px;height:16px;background:#1e293b;border-radius:9999px;z-index:20;}
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:9999px;}
+  .fade-toast{transition:opacity .3s ease;}
+
+  /* ---- AVA shell (header + sidebar), matching AVA basic settings / AVA UI settings ---- */
+  :root{
+    --ava-primary:#0f766e; --ava-primary-dark:#0b5c56; --ava-accent:#14b8a6;
+    --ava-bg:#f1f5f9; --ava-border:#e2e8f0; --ava-text:#1e293b; --ava-text-light:#64748b;
+    --ava-sidebar-bg:#0f172a; --ava-sidebar-text:#cbd5e1; --ava-sidebar-active:#14b8a6;
+  }
+  body{background:var(--ava-bg);}
+  .ava-header{height:64px;background:#fff;border-bottom:1px solid var(--ava-border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:50;gap:12px;}
+  .ava-header .header-left{display:flex;align-items:center;gap:10px;min-width:0;}
+  .ava-header .brand{display:flex;flex-direction:column;line-height:1.3;min-width:0;}
+  .ava-header .brand strong{font-size:15px;color:var(--ava-primary-dark);}
+  .ava-header .brand-sub{font-size:12px;color:var(--ava-text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ava-header .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+  .ava-header .btn.primary{background:var(--ava-primary);color:#fff;border:1px solid var(--ava-primary);padding:0 16px;height:38px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+  .ava-header .btn.primary:hover{background:var(--ava-primary-dark);}
+  .ava-header .save-indicator{font-size:12px;color:var(--ava-accent);white-space:nowrap;}
+  .ava-layout{display:flex;min-height:calc(100vh - 64px);align-items:stretch;}
+  .ava-sidebar{width:270px;flex-shrink:0;background:var(--ava-sidebar-bg);color:var(--ava-sidebar-text);overflow-y:auto;padding:10px 0;position:sticky;top:64px;height:calc(100vh - 64px);}
+  .ava-sidebar .nav-group-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;padding:16px 18px 6px;}
+  .ava-sidebar button.nav-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;color:var(--ava-sidebar-text);padding:11px 18px;font-size:13px;cursor:pointer;border-left:3px solid transparent;font-family:inherit;line-height:1.5;}
+  .ava-sidebar button.nav-item .num{width:20px;height:20px;border-radius:50%;background:#1e293b;color:#94a3b8;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ava-sidebar button.nav-item:hover{background:#1e293b;}
+  .ava-sidebar button.nav-item.active{background:#132a27;border-left-color:var(--ava-sidebar-active);color:#fff;}
+  .ava-sidebar button.nav-item.active .num{background:var(--ava-accent);color:#04201c;}
+  .ava-content{flex:1;min-width:0;padding:26px 30px 80px;}
+  .panel{display:none;}
+  .panel.active{display:block;animation:avafade .15s ease;}
+  @keyframes avafade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .faq-card-box{border:1px solid #e2e8f0;border-radius:12px;padding:16px;}
+  .faq-q-row{display:flex;align-items:center;gap:8px;}
+  .faq-drag-handle{cursor:grab;touch-action:none;}
+  .faq-drag-handle:active{cursor:grabbing;}
+  .faq-q-row.dragging{opacity:.4;}
+  .faq-q-row.drag-over{outline:2px dashed #14b8a6;outline-offset:2px;border-radius:8px;}
+  .faq-nav-disabled{opacity:.4;pointer-events:none;cursor:not-allowed;}
+</style>
+</head>
+<body class="text-slate-800">
+
+<header class="ava-header">
+  <div class="header-left">
+    <div class="brand">
+      <strong>Aiello SiteChat Settings</strong>
+      <span class="brand-sub" id="brandSub">Theme &amp; FAQ Configuration</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn primary" onclick="doSave()">Submit / Update</button>
+    <span class="save-indicator" id="headerSaveIndicator">Saved</span>
+  </div>
+</header>
+
+<div class="ava-layout">
+  <nav class="ava-sidebar" id="avaSidebar"></nav>
+  <main class="ava-content">
+    <div class="max-w-6xl mx-auto">
+
+  <div class="flex gap-6 items-start">
+
+    <!-- LEFT: settings panel -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Greeting panel -->
+      <div id="panel-greeting" class="panel active">
+
+      <!-- Greeting card -->
+      <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div class="flex items-start justify-between mb-5">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800">Greeting</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Bot name, welcome message and hint bubble per language</p>
+          </div>
+          <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg shrink-0" id="langSwitcher"></div>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Bot Name</label>
+            <div class="flex items-center gap-2 mt-1">
+              <div class="w-9 h-9 rounded-full border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center" style="background-color:var(--brand);">
+                <span class="text-white text-xs font-bold" id="botNameInitial">B</span>
+              </div>
+              <input id="botNameInput" type="text" value="Bot" placeholder="例如：小幫手" oninput="onBotNameInput(this.value)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors flex-1">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-1">Bot Icon URL</label>
+            <p class="text-[11px] text-slate-400 mb-1.5">Shown as the bot avatar — paste an image link.</p>
+            <input id="botIconInput" type="text" placeholder="https://example.com/avatar.png" oninput="onBotIconInput(this.value)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors">
+          </div>
+
+          <div class="flex items-center gap-2 pt-1">
+            <div class="flex-1 h-px bg-slate-100"></div>
+            <span id="langContentLabel" class="text-[10px] text-slate-400 font-medium uppercase tracking-wider px-1">繁體中文 內容</span>
+            <div class="flex-1 h-px bg-slate-100"></div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Welcome Message</label>
+            <p class="text-[11px] text-slate-400 mb-1.5">Shown on the pre-connect screen before the user starts chatting.</p>
+            <textarea id="welcomeMsgInput" rows="3" oninput="onGreetingFieldInput('welcome', this.value)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-1">Hint Text</label>
+            <p class="text-[11px] text-slate-400 mb-1.5">Bubble shown next to the chat button on page load. Leave empty to use the default.</p>
+            <input id="hintTextInput" type="text" placeholder="例如：嗨！有任何問題都可以找我們聊聊" oninput="onGreetingFieldInput('hint', this.value)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors">
+          </div>
+
+          <div class="flex items-center gap-3 pt-1">
+            <button onclick="doSave()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors duration-150 cursor-pointer">Save</button>
+          </div>
+        </div>
+      </div>
+
+      </div> <!-- /panel-greeting -->
+
+      <!-- Chat Theme panel -->
+      <div id="panel-theme" class="panel">
+
+      <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div class="mb-5">
+          <h3 class="text-base font-semibold text-slate-800">Chat Theme &amp; Colors</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Click a section to edit its colors — the preview highlights it in real time</p>
+        </div>
+
+        <div class="space-y-5">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-sm font-medium text-slate-600 mb-1">Custom Colors</label>
+              <div class="flex items-center gap-3">
+                <span id="overrideCount" class="text-[11px] text-slate-400">21 overrides active</span>
+                <button onclick="resetAll()" class="text-red-500 hover:text-red-700 text-xs font-medium transition-colors cursor-pointer">Reset all</button>
+              </div>
+            </div>
+            <div id="brandRow"></div>
+          </div>
+
+          <!-- Text size -->
+          <div class="border border-slate-200 rounded-xl bg-white p-3.5">
+            <div class="flex items-baseline justify-between mb-2.5">
+              <div>
+                <p class="text-[13px] font-medium text-slate-700">Text Size</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Scales all text inside the chat widget.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5" id="textSizeGroup"></div>
+          </div>
+
+          <div>
+            <div class="flex items-baseline gap-2 mb-2 px-0.5">
+              <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Inside the Chat</h4>
+              <span class="text-[10.5px] text-slate-400">— Surfaces visible after the chat window opens. Ordered top-to-bottom by visual flow.</span>
+            </div>
+            <div class="space-y-1.5" id="insideChatRows"></div>
+          </div>
+
+          <div>
+            <div class="flex items-baseline gap-2 mb-2 px-0.5">
+              <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">On Your Website</h4>
+              <span class="text-[10.5px] text-slate-400">— Visible on the host page — before the chat opens.</span>
+            </div>
+            <div class="space-y-1.5" id="onWebsiteRows"></div>
+          </div>
+
+          <div>
+            <button onclick="toggleAdvanced()" class="w-full flex items-baseline gap-2 mb-2 px-0.5 cursor-pointer group">
+              <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 group-hover:text-slate-700 transition-colors">Advanced</h4>
+              <span class="text-[10.5px] text-slate-400 text-left">— Already driven by Brand Color — override only if you need finer control.</span>
+              <span class="ml-auto flex items-center gap-1.5">
+                <span class="text-[10px] text-indigo-600 font-medium">4 custom</span>
+                <svg id="advChevron" class="w-3 h-3 text-slate-400 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </button>
+            <div id="advancedRows" class="space-y-1.5 hidden"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-5">
+          <button onclick="doSave()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors duration-150 cursor-pointer">Save</button>
+          <span id="saveToast" class="fade-toast opacity-0 text-xs text-teal-600 font-medium">Saved ✓ (mockup — no backend)</span>
+        </div>
+      </div>
+
+      </div> <!-- /panel-theme -->
+
+      <!-- FAQ Cards panel -->
+      <div id="panel-faq" class="panel">
+        <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-semibold text-slate-800">FAQ Cards</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Set up quick-reply FAQ cards for visitors — up to 4 cards, each shown live in the preview.</p>
+            </div>
+            <span id="faqCountBadge" class="text-[11px] text-slate-400"></span>
+          </div>
+          <div id="faqCardsList" class="space-y-4"></div>
+          <button id="faqAddBtn" onclick="addFaqCard()" class="mt-4 px-4 py-2 border border-dashed border-slate-300 text-slate-500 rounded-lg text-sm font-medium hover:border-teal-400 hover:text-teal-600 transition-colors cursor-pointer w-full">+ Add FAQ Card</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: live preview -->
+    <div class="shrink-0 flex flex-col gap-3 sticky top-8" style="width:300px">
+      <div class="flex items-center justify-between">
+        <label class="block text-sm font-medium text-slate-600 mb-1">Live Preview</label>
+        <div class="flex items-center gap-1.5">
+          <span id="editingBadge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-medium border bg-teal-50 border-teal-200 text-teal-600">Editing area</span>
+          <span id="modeBadge" class="text-[10px] px-2 py-0.5 rounded-full font-medium border bg-teal-50 border-teal-200 text-teal-600">Chat</span>
+        </div>
+      </div>
+
+      <div class="relative mx-auto phone-bezel">
+        <div class="absolute -inset-2 rounded-[2.3rem] bg-slate-800 shadow-2xl"></div>
+        <div class="absolute -inset-1 rounded-[2rem] bg-slate-700"></div>
+        <div class="phone-notch"></div>
+        <div class="relative rounded-[1.5rem] overflow-hidden z-10" style="width:280px;height:600px;">
+          <div class="relative flex flex-col h-full rounded-2xl overflow-hidden select-none em-scale" style="background:#fff;">
+
+            <!-- header -->
+            <div id="pv-header" class="px-3 py-2 flex items-center gap-2 border-b shrink-0" style="background-color:var(--header-bg);">
+              <div id="pv-icon-header" class="w-7 h-7 rounded-full overflow-hidden shrink-0 flex items-center justify-center" style="background-color:var(--header-icon);">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p id="pv-header-title" class="js-botname text-[0.6875em] font-semibold truncate leading-tight" style="color:var(--header-title);">Bot</p>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shrink-0"></span>
+                  <span id="pv-header-status" class="text-[0.5625em] leading-none" style="color:var(--header-status);">Online</span>
+                </div>
+              </div>
+              <div class="shrink-0 text-[0.53125em] font-medium px-[6px] py-[3px] rounded-[4px] text-slate-400">結束</div>
+            </div>
+
+            <!-- body: chat view -->
+            <div id="pv-body-chat" class="flex-1 overflow-hidden px-3 pt-3 pb-2 flex flex-col gap-2.5" style="background-color:var(--canvas-bg);">
+              <div id="pv-welcomecard" class="flex justify-center mb-1">
+                <div class="w-full rounded-xl overflow-hidden" style="background-color:var(--card-bg);">
+                  <div class="flex flex-col items-center gap-1 px-3 pt-3 pb-2">
+                    <div id="pv-icon-card" class="w-7 h-7 rounded-full overflow-hidden shrink-0 flex items-center justify-center" style="background-color:var(--brand);">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    </div>
+                    <span id="pv-cardname" class="js-botname text-[0.625em] font-semibold tracking-tight leading-tight" style="color:var(--card-title);">Bot</span>
+                  </div>
+                  <div class="px-3 py-2">
+                    <p id="pv-cardbody" class="text-[0.65625em] leading-[1.5] text-center whitespace-pre-wrap" style="color:var(--card-body);">嗨！我是 Bot，有什麼我能幫忙的嗎？👋</p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="pv-botmsg" class="flex flex-col gap-1">
+                <div class="flex items-center gap-1.5">
+                  <div id="pv-icon-botmsg" class="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center" style="background-color:var(--brand);">
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  </div>
+                  <span class="js-botname text-[0.625em] font-semibold" style="color:var(--botmsg-name);">Bot</span>
+                  <span id="pv-timestamp1" class="text-[0.5625em] rounded-[3px]" style="color:var(--fb-timestamp);">09:41</span>
+                </div>
+                <div class="ml-[26px] max-w-[80%]">
+                  <p class="text-[0.71875em] leading-[1.5]" style="color:var(--botmsg-text);">Sure! Here are some common topics I can help with.</p>
+                </div>
+              </div>
+              <div id="pv-feedback" class="-mt-1 ml-[26px] flex items-center gap-3 rounded-[4px]">
+                <span class="flex items-center gap-1 text-[0.5625em]" style="color:var(--fb-up);">
+                  <svg class="w-[10px] h-[10px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>
+                  Helpful
+                </span>
+                <span class="flex items-center gap-1 text-[0.5625em]" style="color:var(--fb-down);">
+                  <svg class="w-[10px] h-[10px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></svg>
+                  Not helpful
+                </span>
+              </div>
+
+              <div id="pv-faq" class="relative">
+                <div id="pv-faq-nav" class="hidden">
+                  <button id="pv-faq-prev" onclick="faqPrev()" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-4 h-4 rounded-full shadow flex items-center justify-center cursor-pointer" style="background-color:var(--faq-nav);">
+                    <svg class="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <button id="pv-faq-next" onclick="faqNext()" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-4 h-4 rounded-full shadow flex items-center justify-center cursor-pointer" style="background-color:var(--faq-nav);">
+                    <svg class="w-2 h-2" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+                <div class="ml-[26px] rounded-xl overflow-hidden border border-slate-100 shadow-sm max-w-[85%]" style="background-color:var(--faq-body);">
+                  <div class="px-3 py-1.5" style="background-color:var(--faq-header);">
+                    <p id="pv-faq-title" class="text-[0.625em] font-bold" style="color:var(--faq-headertext);">General FAQ</p>
+                  </div>
+                  <div id="pv-faq-questions" class="px-3 py-2 space-y-1.5"></div>
+                </div>
+              </div>
+
+              <div id="pv-usermsg" class="flex justify-end">
+                <div class="max-w-[72%]">
+                  <div class="rounded-2xl rounded-tr-sm px-3 py-2" style="background-color:var(--user-bg);">
+                    <p class="text-[0.71875em] leading-[1.5]" style="color:var(--user-text);">What are your opening hours?</p>
+                  </div>
+                  <div class="flex justify-end mt-0.5">
+                    <span id="pv-timestamp2" class="text-[0.5625em]" style="color:var(--fb-timestamp);">09:42</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="pv-spinner" class="flex items-center gap-1.5">
+                <div id="pv-icon-spinner" class="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center" style="background-color:var(--brand);">
+                  <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </div>
+                <div class="flex items-center gap-1.5 py-1">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0 animate-spin" style="border:2px solid var(--fb-spinner-track); border-top-color:var(--fb-spinner);"></span>
+                  <span class="text-[0.625em] font-medium" style="color:var(--fb-spinner);">思考中...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- body: welcome view -->
+            <div id="pv-body-welcome" class="hidden flex-1 overflow-hidden px-6 pb-2 flex-col items-center justify-center gap-4 text-center" style="background:var(--welcome-bg);">
+              <div id="pv-icon-welcome" class="overflow-hidden rounded-2xl flex items-center justify-center shrink-0" style="background-color:var(--brand); width:56px; height:56px;">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              </div>
+              <div>
+                <p id="pv-welcome-title" class="js-botname font-semibold mb-2 text-[1em]" style="color:var(--welcome-title);">Bot</p>
+                <p id="pv-welcome-subtitle" class="text-[0.8em] leading-relaxed whitespace-pre-line mx-auto" style="color:var(--welcome-subtitle); width:180px;">嗨！我是 Bot，有什麼我能幫忙的嗎？👋</p>
+              </div>
+              <button id="pv-startbtn" class="rounded-full text-white font-medium text-[0.85em] flex items-center justify-center shrink-0" style="background-color:var(--welcome-start); width:128px; height:38px;">Start Chat</button>
+              <button onclick="setMode('chat')" class="text-[0.65em] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer underline underline-offset-2">Switch to chat view →</button>
+            </div>
+
+            <!-- confirm overlay -->
+            <div id="pv-confirm-overlay" class="hidden absolute inset-0 bg-black/40 flex items-center justify-center z-30">
+              <div class="bg-white rounded-xl p-5 w-[220px] text-center shadow-xl">
+                <p class="font-semibold text-[0.9em] mb-1">結束對話</p>
+                <p class="text-[0.7em] text-slate-500 mb-4">確定要結束這次對話嗎？<br>結束後將無法繼續此對話。</p>
+                <button id="pv-confirm-btn" class="w-full py-2 rounded-lg text-white text-[0.8em] font-medium mb-2" style="background-color:var(--destructive-btn);">結束對話</button>
+                <button class="w-full py-1 text-[0.75em] text-slate-500">取消</button>
+              </div>
+            </div>
+
+            <!-- footer -->
+            <div id="pv-inputbar" class="px-2.5 py-2 border-t shrink-0" style="background-color:var(--input-toolbar); border-color:var(--input-border);">
+              <div class="flex items-center gap-1.5">
+                <div class="flex-1 px-3 py-2 rounded-full text-[0.6875em]" style="background-color:var(--input-field); color:var(--input-text);">
+                  <span style="color:var(--input-placeholder);">Type a message...</span>
+                </div>
+                <div class="w-7 h-7 flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="var(--input-send)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                </div>
+              </div>
+            </div>
+            <div id="pv-footer-toggle" class="px-2.5 pb-2 flex justify-center">
+              <button onclick="setMode('welcome')" class="text-[0.625em] px-3 py-1 rounded-full bg-black/10 hover:bg-black/20 transition-colors cursor-pointer font-medium text-slate-600">
+                ← Welcome screen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center gap-1.5">
+        <span class="text-[10px] text-slate-400">⚡ Updates instantly · Save to apply to widget</span>
+      </div>
+
+      <div class="mt-2">
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-sm font-medium text-slate-600 mb-1">Embed Button</label>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-400 font-medium">on your website</span>
+        </div>
+        <div class="relative rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-slate-50">
+          <div class="flex items-center gap-2 px-3 h-8 bg-white/90 border-b border-black/[.06] backdrop-blur-sm shrink-0">
+            <div class="flex gap-[5px]">
+              <div class="w-[9px] h-[9px] rounded-full bg-red-400/70"></div>
+              <div class="w-[9px] h-[9px] rounded-full bg-amber-400/70"></div>
+              <div class="w-[9px] h-[9px] rounded-full bg-green-500/70"></div>
+            </div>
+            <div class="flex-1 h-[18px] rounded-full flex items-center px-2.5 bg-slate-100">
+              <span class="text-[9px] font-medium tracking-wide text-slate-500">yourwebsite.com</span>
+            </div>
+          </div>
+          <div class="px-5 pt-4 space-y-2 relative" style="height:130px;">
+            <div class="h-2 rounded-full w-3/5 bg-slate-200"></div>
+            <div class="h-1.5 rounded-full w-4/5 bg-slate-200"></div>
+            <div class="h-1.5 rounded-full w-2/3 bg-slate-200"></div>
+            <div class="h-1.5 rounded-full w-1/2 bg-slate-200"></div>
+            <div class="absolute bottom-3 right-3 flex items-center gap-1.5">
+              <div id="pv-hint" class="flex items-center">
+                <div id="pv-hint-text" class="rounded-full px-2.5 py-[5px] text-[9px] font-medium max-w-[160px] truncate leading-snug border border-black/[.05] cursor-pointer shadow" style="background-color:var(--hint-bg); color:var(--hint-text);">嘿！這邊有 Chatbox 可以幫你解決問題喔 👋</div>
+              </div>
+              <button id="pv-launcher" class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-lg" style="background-color:var(--launcher-bg);">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke-width="2" style="stroke:var(--launcher-icon);"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 text-center mt-1.5">Click button to toggle hint · Reflects accent color &amp; bot icon</p>
+      </div>
+    </div>
+  </div>
+</div>
+  </main>
+</div>
+
+<script>
+const PRESETS = ['#00897b','#0ea5e9','#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#1a2540','#374151'];
+
+const ICONS = {
+  brush:'<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>',
+  header:'<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="13" y2="18"/>',
+  camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  power:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="9" y1="14" x2="15" y2="14"/>',
+  bubble:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  grid:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+  xcircle:'<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+  thumb:'<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>'
+};
+function icon(key){ return `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[key]}</svg>`; }
+
+const SECTIONS = [
+  { id:'headerBar', icon:'header', label:'Header Bar', desc:'Top strip with bot name and online status.', mode:'chat', highlight:['pv-header'],
+    fields:[
+      {key:'--header-bg', label:'Background', sub:'', def:'#1a2540'},
+      {key:'--header-title', label:'Title text', sub:'Bot name in header', def:'#ffffff'},
+      {key:'--header-icon', label:'Icon', sub:'Chat icon', def:'#c4a060'},
+      {key:'--header-status', label:'Status text', sub:'"Online" label', def:'#8fa0c0'},
+    ]},
+  { id:'welcomeScreen', icon:'camera', label:'Welcome Screen', desc:'First screen visitors see — before clicking "Start chat".', mode:'welcome', highlight:['pv-body-welcome'],
+    fields:[
+      {key:'--welcome-bg', label:'Background', sub:'Gradient / solid', def:'linear-gradient(160deg, #1a2540 0%, #243058 100%)'},
+      {key:'--welcome-start', label:'Start button', sub:'', def:'#c4a060'},
+      {key:'--welcome-title', label:'Title text', sub:'Bot name', def:'#ffffff'},
+      {key:'--welcome-subtitle', label:'Subtitle text', sub:'Welcome message', def:'#8fa0c0'},
+    ]},
+  { id:'chatCanvas', icon:'image', label:'Chat Canvas', desc:'Area behind messages — the reading background.', mode:'chat', highlight:['pv-body-chat'],
+    fields:[
+      {key:'--canvas-bg', label:'Background', sub:'', def:'#f4f5f7'},
+    ]},
+  { id:'welcomeCard', icon:'camera', label:'Welcome Card', desc:'In-chat greeting card at the top of the conversation (not the pre-connect screen).', mode:'chat', highlight:['pv-welcomecard'],
+    fields:[
+      {key:'--card-bg', label:'Background', sub:'Card fill (picker = solid)', def:'#1a2540'},
+      {key:'--card-title', label:'Title text', sub:'Bot name on the card', def:'#ffffff'},
+      {key:'--card-body', label:'Body text', sub:'Welcome message', def:'#ffffff'},
+    ]},
+  { id:'botMessages', icon:'message', label:'Bot Messages', desc:'Bubble + text for messages from the bot.', mode:'chat', highlight:['pv-botmsg'],
+    fields:[
+      {key:'--botmsg-bg', label:'Bubble background', sub:'', def:'#ffffff'},
+      {key:'--botmsg-text', label:'Text color', sub:'', def:'#1a2540'},
+      {key:'--botmsg-name', label:'Bot name', sub:'Sender label above bubble', def:'#1a2540'},
+    ]},
+  { id:'inputArea', icon:'edit', label:'Input Area', desc:'Bottom toolbar where users compose messages.', mode:'chat', highlight:['pv-inputbar'],
+    fields:[
+      {key:'--input-toolbar', label:'Toolbar', sub:'Behind input', def:'#ffffff'},
+      {key:'--input-field', label:'Input field', sub:'', def:'#f4f5f7'},
+      {key:'--input-send', label:'Send button', sub:'', def:'#1a2540'},
+      {key:'--input-text', label:'Input text', sub:'Typed text', def:'#1a2540'},
+      {key:'--input-placeholder', label:'Placeholder', sub:'Hint text', def:'#8fa0c0'},
+      {key:'--input-border', label:'Border', sub:'Toolbar divider', def:'#dde1ea'},
+    ]},
+];
+const ON_WEBSITE = [
+  { id:'launcherButton', icon:'power', label:'Launcher Button', desc:'Floating round button. Set independently so it can stand out against your site.', mode:null, highlight:['pv-launcher'],
+    fields:[
+      {key:'--launcher-bg', label:'Background', sub:'FAB background', def:'#1a2540'},
+      {key:'--launcher-icon', label:'Icon color', sub:'Chat icon stroke', def:'#ffffff'},
+    ]},
+  { id:'hintBubble', icon:'bubble', label:'Hint Bubble', desc:'Pill bubble next to the launcher.', mode:null, highlight:['pv-hint'],
+    fields:[
+      {key:'--hint-bg', label:'Background', sub:'Bubble pill bg', def:'#ffffff'},
+      {key:'--hint-text', label:'Text color', sub:'', def:'#1e293b'},
+    ]},
+];
+const ADVANCED = [
+  { id:'userMessages', icon:'user', label:'User Messages', desc:'Brand color drives this by default.', mode:'chat', highlight:['pv-usermsg'],
+    fields:[
+      {key:'--user-bg', label:'Bubble background', sub:'', def:'#1a2540'},
+      {key:'--user-text', label:'Text color', sub:'', def:'#ffffff'},
+    ]},
+  { id:'faqCards', icon:'grid', label:'FAQ Cards & Links', desc:'Category card header, title text, question links, related-card title, gallery arrows.', mode:'chat', highlight:['pv-faq'],
+    fields:[
+      {key:'--faq-body', label:'Card body', sub:'Card fill behind questions', def:'#ffffff'},
+      {key:'--faq-header', label:'Card header', sub:'Category top bar', def:'#1a2540'},
+      {key:'--faq-headertext', label:'Header text', sub:'Category card title', def:'#ffffff'},
+      {key:'--faq-link', label:'Link color', sub:'FAQ questions', def:'#9a6f20'},
+      {key:'--faq-related', label:'Related title', sub:'Related-question card title', def:'#1f2937'},
+      {key:'--faq-nav', label:'Nav arrow', sub:'Left / right buttons', def:'#1a2540'},
+    ]},
+  { id:'destructiveAction', icon:'xcircle', label:'Destructive Action', desc:'Confirm button color in the "End Chat" sheet.', mode:'confirm', highlight:['pv-confirm-overlay'],
+    fields:[
+      {key:'--destructive-btn', label:'Confirm button', sub:'', def:'#ef4444'},
+    ]},
+  { id:'secondaryFeedback', icon:'thumb', label:'Secondary & Feedback', desc:'Timestamps, message feedback icons, and the image-loading spinner.', mode:'chat', highlight:['pv-feedback','pv-timestamp1','pv-timestamp2','pv-spinner'],
+    fields:[
+      {key:'--fb-timestamp', label:'Timestamps', sub:'Message time', def:'#8fa0c0'},
+      {key:'--fb-up', label:'Feedback up', sub:'Thumbs-up icon', def:'#9a6f20'},
+      {key:'--fb-down', label:'Feedback down', sub:'Thumbs-down icon', def:'#e05555'},
+      {key:'--fb-spinner', label:'Spinner accent', sub:'Image loading', def:'#9a6f20'},
+      {key:'--fb-spinner-track', label:'Spinner track', sub:'Image loading', def:'#dde1ea'},
+    ]},
+];
+const BRAND = { id:'brandColor', icon:'brush', label:'Brand Color', desc:'One color drives all CTAs and the bot identity: Send button · User bubble · Start-Chat button · Header & chat avatar · Focus ring. Decorative surfaces (FAQ cards, welcome banner gradient) keep theme defaults — fine-tune below.', mode:'chat', highlight:['pv-header','pv-inputbar','pv-usermsg'],
+  fields:[ {key:'--brand', label:'Brand Color', sub:'', def:'#c4a060'} ] };
+
+// The header subtitle is NOT hardcoded to any one hotel - in production this would come from
+// the project record (same lookup pattern as getProjectId() in AVA basic settings). For this
+// standalone mockup it falls back to a ?hotel= URL param, then to no name at all.
+function getProjectNameFromUrl(){
+  const params = new URLSearchParams(location.search);
+  return params.get('hotel') || params.get('project') || null;
+}
+const PROJECT_NAME = getProjectNameFromUrl();
+function renderBrandSub(){
+  const el = document.getElementById('brandSub');
+  el.textContent = (PROJECT_NAME ? PROJECT_NAME + ' · ' : '') + 'Theme & FAQ Configuration';
+}
+
+let openRowId = null;
+let currentMode = 'chat';
+let activePanel = 'greeting';
+const root = document.documentElement.style;
+
+function getVar(key){ return getComputedStyle(document.documentElement).getPropertyValue(key).trim(); }
+function setVar(key, val){ root.setProperty(key, val); }
+
+function fieldRowHTML(section, field){
+  const current = getVar(field.key) || field.def;
+  return `
+  <div class="space-y-1.5">
+    <div class="flex items-start justify-between">
+      <div class="min-h-[32px]">
+        <p class="text-[12.5px] font-medium text-slate-700">${field.label}</p>
+        <p class="text-[10.5px] text-slate-400">${field.sub||''}</p>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+        <div class="w-5 h-5 rounded border border-slate-200" style="background-color:${current}"></div>
+        <button onclick="resetField('${section.id}','${field.key}','${field.def}')" class="text-[10px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">Reset</button>
+      </div>
+    </div>
+    <div class="space-y-2">
+      <div class="flex flex-wrap gap-1.5">
+        ${PRESETS.map(p=>`<button class="preset-swatch ${current.toLowerCase()===p?'selected':''}" style="background-color:${p};border-color:${current.toLowerCase()===p?'#1e293b':'transparent'}" onclick="setField('${section.id}','${field.key}','${p}')"></button>`).join('')}
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="relative w-8 h-8 shrink-0 cursor-pointer">
+          <div class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden" style="background-color:${current}"></div>
+          <input type="color" value="${current}" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" oninput="setField('${section.id}','${field.key}',this.value)">
+        </div>
+        <div class="flex items-center flex-1 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-colors">
+          <span class="px-2 text-xs text-slate-400 select-none border-r border-slate-200 bg-slate-50 h-full flex items-center py-1.5">#</span>
+          <input type="text" maxlength="6" value="${current.replace('#','')}" class="flex-1 px-2 py-1.5 text-xs font-mono text-slate-700 focus:outline-none bg-white"
+            onchange="if(/^[0-9a-fA-F]{6}$/.test(this.value)){ setField('${section.id}','${field.key}','#'+this.value); } else { this.value=getVar('${field.key}').replace('#',''); }">
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function rowHTML(section, small){
+  const isOpen = openRowId === section.id;
+  const dots = section.fields.slice(0,4).map(f=>`<span class="field-dot" style="background-color:${getVar(f.key)||f.def}"></span>`).join('');
+  return `
+  <div class="row-card ${isOpen?'open':''}" id="row-${section.id}">
+    <button onclick="toggleRow('${section.id}')" class="w-full flex items-center gap-2.5 px-3.5 py-3 bg-white hover:bg-slate-50 transition-colors cursor-pointer">
+      <span class="shrink-0 w-6 h-6 flex items-center justify-center rounded-md transition-colors ${isOpen?'bg-indigo-100 text-indigo-600':'bg-slate-100 text-slate-500'}">${icon(section.icon)}</span>
+      <span class="flex-1 text-left text-[13px] font-medium transition-colors ${isOpen?'text-indigo-700':'text-slate-700'}">${section.label}</span>
+      <span class="flex items-center gap-1 shrink-0">${dots}</span>
+      <svg class="w-3.5 h-3.5 text-slate-400 transition-transform ${isOpen?'rotate-180':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    ${isOpen? `
+    <div class="px-3.5 pb-4 pt-3 border-t border-slate-100 space-y-4" style="background-color:rgba(248,250,252,.6)">
+      <p class="text-[11px] text-slate-400 -mt-1">${section.desc}</p>
+      <div class="grid ${section.fields.length>=3?'sm:grid-cols-3':section.fields.length===2?'sm:grid-cols-2':'grid-cols-1'} gap-4">
+        ${section.fields.map(f=>fieldRowHTML(section,f)).join('')}
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+function renderAll(){
+  document.getElementById('brandRow').innerHTML = rowHTML(BRAND);
+  document.getElementById('insideChatRows').innerHTML = SECTIONS.map(s=>rowHTML(s)).join('');
+  document.getElementById('onWebsiteRows').innerHTML = ON_WEBSITE.map(s=>rowHTML(s)).join('');
+  document.getElementById('advancedRows').innerHTML = ADVANCED.map(s=>rowHTML(s)).join('');
+  renderTextSizeGroup();
+  applyHighlight();
+}
+
+function allSections(){ return [BRAND, ...SECTIONS, ...ON_WEBSITE, ...ADVANCED]; }
+
+function toggleRow(id){
+  openRowId = (openRowId === id) ? null : id;
+  const section = allSections().find(s=>s.id===id);
+  if(openRowId && section){
+    if(section.mode) setMode(section.mode, true);
+  } else {
+    setMode('chat', true);
+  }
+  renderAll();
+}
+
+function setField(sectionId, key, value){
+  setVar(key, value);
+  renderAll();
+}
+function resetField(sectionId, key, def){
+  setVar(key, def);
+  renderAll();
+}
+function resetAll(){
+  allSections().forEach(s=>s.fields.forEach(f=>setVar(f.key, f.def)));
+  openRowId = null;
+  setMode('chat', true);
+  renderAll();
+}
+
+function toggleAdvanced(){
+  const el = document.getElementById('advancedRows');
+  const chevron = document.getElementById('advChevron');
+  el.classList.toggle('hidden');
+  chevron.style.transform = el.classList.contains('hidden') ? '' : 'rotate(180deg)';
+}
+
+function applyHighlight(){
+  document.querySelectorAll('.highlight-ring').forEach(el=>el.classList.remove('highlight-ring'));
+  let targets = [];
+  if(activePanel === 'faq'){
+    targets = ['pv-faq'];
+  } else if(activePanel === 'theme'){
+    const section = allSections().find(s=>s.id===openRowId);
+    if(section) targets = section.highlight;
+  }
+  document.getElementById('editingBadge').classList.toggle('hidden', targets.length===0);
+  targets.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.add('highlight-ring');
+  });
+}
+
+function setMode(mode, fromRow){
+  currentMode = mode;
+  const chatEl = document.getElementById('pv-body-chat');
+  const welcomeEl = document.getElementById('pv-body-welcome');
+  const confirmEl = document.getElementById('pv-confirm-overlay');
+  const headerEl = document.getElementById('pv-header');
+  const inputbarEl = document.getElementById('pv-inputbar');
+  const footerToggleEl = document.getElementById('pv-footer-toggle');
+  const modeBadge = document.getElementById('modeBadge');
+
+  confirmEl.classList.add('hidden');
+  if(mode === 'welcome'){
+    chatEl.classList.add('hidden'); chatEl.classList.remove('flex');
+    welcomeEl.classList.remove('hidden'); welcomeEl.classList.add('flex');
+    headerEl.classList.add('hidden');
+    inputbarEl.classList.add('hidden');
+    footerToggleEl.classList.add('hidden');
+    modeBadge.textContent = 'Welcome';
+  } else {
+    welcomeEl.classList.add('hidden'); welcomeEl.classList.remove('flex');
+    chatEl.classList.remove('hidden'); chatEl.classList.add('flex');
+    headerEl.classList.remove('hidden');
+    inputbarEl.classList.remove('hidden');
+    footerToggleEl.classList.remove('hidden');
+    modeBadge.textContent = 'Chat';
+    if(mode === 'confirm'){ confirmEl.classList.remove('hidden'); }
+  }
+  applyHighlight();
+}
+
+function renderTextSizeGroup(){
+  const sizes = [{key:'small', label:'Small', px:'13px', aa:'0.85em'},{key:'medium', label:'Medium', px:'15px', aa:'1em'},{key:'large', label:'Large', px:'17px', aa:'1.15em'}];
+  const current = window.__textSize || 'medium';
+  document.getElementById('textSizeGroup').innerHTML = sizes.map(s=>`
+    <button onclick="setTextSize('${s.key}','${s.px}')" class="flex flex-col items-center gap-1 py-2.5 rounded-lg border transition-all cursor-pointer ${current===s.key?'border-indigo-400 bg-indigo-50 shadow-[0_0_0_2px_#818cf830]':'border-slate-200 bg-white hover:bg-slate-50'}">
+      <span class="font-semibold leading-none" style="font-size:${s.aa}">Aa</span>
+      <span class="text-[10.5px] ${current===s.key?'text-indigo-700 font-medium':'text-slate-500'}">${s.label}</span>
+    </button>`).join('');
+}
+function setTextSize(key, px){
+  window.__textSize = key;
+  setVar('--text-scale', px);
+  renderTextSizeGroup();
+}
+
+function doSave(){
+  const toast = document.getElementById('saveToast');
+  toast.style.opacity = '1';
+  setTimeout(()=>{ toast.style.opacity = '0'; }, 1800);
+  const hdr = document.getElementById('headerSaveIndicator');
+  if(hdr){
+    hdr.textContent = 'Submitted ✓ (mockup — no backend)';
+    setTimeout(()=>{ hdr.textContent = 'Saved'; }, 2200);
+  }
+}
+
+// ---- AVA sidebar / panel navigation ----
+const NAV_ITEMS = [
+  { id:'greeting', label:'Greeting' },
+  { id:'theme', label:'Chat Theme & Colors' },
+  { id:'faq', label:'FAQ Cards' },
+];
+
+function renderSidebar(){
+  const el = document.getElementById('avaSidebar');
+  el.innerHTML = '<div class="nav-group-label">Chat Widget</div>' + NAV_ITEMS.map((item, i)=>`
+    <button class="nav-item ${activePanel===item.id?'active':''}" onclick="switchPanel('${item.id}')">
+      <span class="num">${i+1}</span>
+      <span class="label">${item.label}</span>
+    </button>`).join('');
+}
+
+function switchPanel(id){
+  activePanel = id;
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const target = document.getElementById('panel-'+id);
+  if(target) target.classList.add('active');
+  if(id !== 'theme'){ openRowId = null; }
+  if(id === 'faq'){ setMode('chat'); }
+  renderSidebar();
+  renderAll();
+  applyHighlight();
+}
+
+// ---- FAQ Cards ----
+let faqCards = [
+  { title:'General FAQ', questions:['What are your hours?','How to reset password?','Contact support'] }
+];
+let currentFaqIndex = 0;
+
+function escapeAttr(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function renderFaqEditor(){
+  const list = document.getElementById('faqCardsList');
+  document.getElementById('faqCountBadge').textContent = faqCards.length + ' / 4 cards';
+  document.getElementById('faqAddBtn').classList.toggle('hidden', faqCards.length >= 4);
+  list.innerHTML = faqCards.map((card, ci) => `
+    <div class="faq-card-box">
+      <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Card Title</label>
+      <div class="flex items-center gap-2 mb-4">
+        <input type="text" value="${escapeAttr(card.title)}" placeholder="Card title, e.g. General FAQ" oninput="updateFaqTitle(${ci}, this.value)" class="flex-1 px-3 py-2 border border-slate-300 bg-slate-50 rounded-lg text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500">
+        <button onclick="removeFaqCard(${ci})" class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer text-xs px-2 shrink-0">Remove card</button>
+      </div>
+      <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Questions</label>
+      <div class="space-y-2">
+        ${card.questions.map((q, qi) => `
+          <div class="faq-q-row" draggable="true" data-ci="${ci}" data-qi="${qi}" ondragstart="faqDragStart(${ci},${qi},event)" ondragover="faqDragOver(${ci},${qi},event)" ondragleave="faqDragLeave(event)" ondrop="faqDrop(${ci},${qi},event)" ondragend="faqDragEnd(event)">
+            <span class="faq-drag-handle text-slate-300 shrink-0 select-none" title="Drag to reorder">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>
+            </span>
+            <input type="text" value="${escapeAttr(q)}" placeholder="Question text" oninput="updateFaqQuestion(${ci},${qi},this.value)" class="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500">
+            <button onclick="removeFaqQuestion(${ci},${qi})" class="text-slate-300 hover:text-red-500 transition-colors cursor-pointer px-1 shrink-0">✕</button>
+          </div>`).join('')}
+      </div>
+      <div class="mt-4">
+        <button onclick="addFaqQuestion(${ci})" class="text-xs text-teal-600 hover:text-teal-700 cursor-pointer font-medium">+ Add question</button>
+      </div>
+    </div>`).join('');
+  renderFaqPreview();
+}
+
+// ---- drag-to-reorder for FAQ questions ----
+let faqDragInfo = null;
+function faqDragStart(ci, qi, ev){
+  faqDragInfo = { ci, qi };
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('text/plain', String(qi));
+  ev.currentTarget.classList.add('dragging');
+}
+function faqDragOver(ci, qi, ev){
+  if(!faqDragInfo || faqDragInfo.ci !== ci) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = 'move';
+  ev.currentTarget.classList.add('drag-over');
+}
+function faqDragLeave(ev){
+  ev.currentTarget.classList.remove('drag-over');
+}
+function faqDrop(ci, qi, ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  if(!faqDragInfo || faqDragInfo.ci !== ci){ faqDragInfo = null; return; }
+  const list = faqCards[ci].questions;
+  const [moved] = list.splice(faqDragInfo.qi, 1);
+  list.splice(qi, 0, moved);
+  faqDragInfo = null;
+  renderFaqEditor();
+}
+function faqDragEnd(ev){
+  ev.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.faq-q-row.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  faqDragInfo = null;
+}
+
+function addFaqCard(){
+  if(faqCards.length >= 4) return;
+  faqCards.push({ title:'New FAQ', questions:['New question'] });
+  renderFaqEditor();
+}
+function removeFaqCard(i){
+  faqCards.splice(i,1);
+  if(faqCards.length===0){ faqCards.push({title:'General FAQ', questions:['What are your hours?']}); }
+  if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
+  renderFaqEditor();
+}
+function updateFaqTitle(i, val){ faqCards[i].title = val; renderFaqPreview(); }
+function addFaqQuestion(i){ faqCards[i].questions.push('New question'); renderFaqEditor(); }
+function removeFaqQuestion(i, qi){
+  faqCards[i].questions.splice(qi,1);
+  renderFaqEditor();
+}
+function updateFaqQuestion(i, qi, val){ faqCards[i].questions[qi] = val; renderFaqPreview(); }
+
+function renderFaqPreview(){
+  if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
+  const card = faqCards[currentFaqIndex] || { title:'', questions:[] };
+  document.getElementById('pv-faq-title').textContent = card.title;
+  document.getElementById('pv-faq-questions').innerHTML = card.questions.map((q, idx) => {
+    const isLast = idx === card.questions.length - 1;
+    return `<p class="text-[0.65625em] ${isLast?'':'hover:underline cursor-pointer'}" style="color:${isLast?'var(--faq-related)':'var(--faq-link)'};">${escapeAttr(q)}</p>`;
+  }).join('');
+  document.getElementById('pv-faq-nav').classList.toggle('hidden', faqCards.length <= 1);
+  document.getElementById('pv-faq-prev').classList.toggle('faq-nav-disabled', currentFaqIndex <= 0);
+  document.getElementById('pv-faq-next').classList.toggle('faq-nav-disabled', currentFaqIndex >= faqCards.length - 1);
+}
+function faqPrev(){ if(currentFaqIndex <= 0) return; currentFaqIndex--; renderFaqPreview(); }
+function faqNext(){ if(currentFaqIndex >= faqCards.length - 1) return; currentFaqIndex++; renderFaqPreview(); }
+
+// ---- Greeting (multi-language) ----
+// Defaults below mirror the "demo2" organization on eb-console (empty per-language fields
+// fall back to a generic greeting/hint at runtime) - shown here pre-filled with that same
+// generic copy so the form isn't blank.
+const LANGS = {
+  en: { label:'EN', contentLabel:'English Content',
+    welcome:'Hi! I\'m Bot. How can I help you? 👋',
+    hint:'Hey! There\'s a chatbox here to help you 👋' },
+  zh: { label:'繁中', contentLabel:'繁體中文 內容',
+    welcome:'嗨！我是 Bot，有什麼我能幫忙的嗎？👋',
+    hint:'嘿！這邊有 Chatbox 可以幫你解決問題喔 👋' },
+  ja: { label:'日本語', contentLabel:'日本語コンテンツ',
+    welcome:'こんにちは！Botです。何かお手伝いできることはありますか？👋',
+    hint:'こんにちは！お困りのことがあればチャットでお手伝いします 👋' },
+};
+let currentLang = 'zh';
+
+function renderLangSwitcher(){
+  const el = document.getElementById('langSwitcher');
+  el.innerHTML = Object.keys(LANGS).map(key=>{
+    const active = key===currentLang;
+    return `<button onclick="setLang('${key}')" class="relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${active?'bg-white text-slate-800 shadow-sm':'text-slate-500 hover:text-slate-700'}">
+      ${LANGS[key].label}
+      <span class="w-1.5 h-1.5 rounded-full transition-colors bg-emerald-400"></span>
+    </button>`;
+  }).join('');
+}
+
+function setLang(key){
+  currentLang = key;
+  renderLangSwitcher();
+  document.getElementById('langContentLabel').textContent = LANGS[key].contentLabel;
+  document.getElementById('welcomeMsgInput').value = LANGS[key].welcome;
+  document.getElementById('hintTextInput').value = LANGS[key].hint;
+  syncPreviewFromGreeting();
+}
+
+function onGreetingFieldInput(field, value){
+  LANGS[currentLang][field] = value;
+  syncPreviewFromGreeting();
+}
+
+function onBotNameInput(value){
+  const name = value || 'Bot';
+  document.querySelectorAll('.js-botname').forEach(el=>el.textContent=name);
+  document.getElementById('botNameInitial').textContent = name.trim().charAt(0).toUpperCase() || 'M';
+}
+
+function syncPreviewFromGreeting(){
+  const l = LANGS[currentLang];
+  document.getElementById('pv-welcome-subtitle').textContent = l.welcome;
+  document.getElementById('pv-cardbody').textContent = l.welcome;
+  document.getElementById('pv-hint-text').textContent = l.hint;
+}
+
+// ---- Bot Icon: fall back to the chat-bubble glyph when no icon has been uploaded ----
+let botIconUrl = '';
+const BOT_BUBBLE_PATH = 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z';
+function botAvatarMarkup(sizeClass, strokeWidth){
+  if (botIconUrl) {
+    return `<img src="${escapeAttr(botIconUrl)}" alt="" class="w-full h-full object-cover">`;
+  }
+  return `<svg class="${sizeClass}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round"><path d="${BOT_BUBBLE_PATH}"/></svg>`;
+}
+function renderBotAvatars(){
+  document.getElementById('pv-icon-header').innerHTML = botAvatarMarkup('w-3.5 h-3.5','2');
+  document.getElementById('pv-icon-card').innerHTML = botAvatarMarkup('w-3.5 h-3.5','2');
+  document.getElementById('pv-icon-botmsg').innerHTML = botAvatarMarkup('w-2.5 h-2.5','2.5');
+  document.getElementById('pv-icon-spinner').innerHTML = botAvatarMarkup('w-2.5 h-2.5','2.5');
+  document.getElementById('pv-icon-welcome').innerHTML = botAvatarMarkup('w-7 h-7','1.75');
+}
+function onBotIconInput(value){
+  botIconUrl = (value || '').trim();
+  renderBotAvatars();
+}
+
+function initGreeting(){
+  renderLangSwitcher();
+  document.getElementById('langContentLabel').textContent = LANGS[currentLang].contentLabel;
+  document.getElementById('welcomeMsgInput').value = LANGS[currentLang].welcome;
+  document.getElementById('hintTextInput').value = LANGS[currentLang].hint;
+  syncPreviewFromGreeting();
+  renderBotAvatars();
+}
+
+// init
+renderBrandSub();
+setMode('chat');
+renderAll();
+initGreeting();
+renderSidebar();
+renderFaqEditor();
+applyHighlight();
+</script>
+</body>
+</html>
