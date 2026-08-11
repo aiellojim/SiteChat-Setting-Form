@@ -854,9 +854,8 @@ function renderFaqPreview(){
   if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
   const card = faqCards[currentFaqIndex] || { title:'', questions:[] };
   document.getElementById('pv-faq-title').textContent = card.title;
-  document.getElementById('pv-faq-questions').innerHTML = card.questions.map((q, idx) => {
-    const isLast = idx === card.questions.length - 1;
-    return `<p class="text-[0.65625em] ${isLast?'':'hover:underline cursor-pointer'}" style="color:${isLast?'var(--faq-related)':'var(--faq-link)'};">${escapeAttr(q)}</p>`;
+  document.getElementById('pv-faq-questions').innerHTML = card.questions.map((q) => {
+    return `<p class="text-[0.65625em] hover:underline cursor-pointer" style="color:var(--faq-link);">${escapeAttr(q)}</p>`;
   }).join('');
   document.getElementById('pv-faq-nav').classList.toggle('hidden', faqCards.length <= 1);
   document.getElementById('pv-faq-prev').classList.toggle('faq-nav-disabled', currentFaqIndex <= 0);
