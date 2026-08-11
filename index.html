@@ -17,7 +17,7 @@
     --launcher-bg:#1a2540; --launcher-icon:#ffffff;
     --hint-bg:#ffffff; --hint-text:#1e293b;
     --user-bg:#1a2540; --user-text:#ffffff;
-    --faq-body:#ffffff; --faq-header:#1a2540; --faq-headertext:#ffffff; --faq-link:#9a6f20; --faq-related:#1f2937; --faq-nav:#1a2540;
+    --faq-body:#ffffff; --faq-header:#1a2540; --faq-headertext:#ffffff; --faq-link:#c4a060; --faq-related:#1f2937; --faq-nav:#1a2540;
     --destructive-btn:#ef4444;
     --fb-timestamp:#8fa0c0; --fb-up:#9a6f20; --fb-down:#e05555; --fb-spinner:#9a6f20; --fb-spinner-track:#dde1ea;
     --text-scale:15px;
@@ -160,6 +160,14 @@
 
       <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <div class="mb-5">
+          <h3 class="text-base font-semibold text-slate-800">Quick Colors</h3>
+          <p class="text-xs text-slate-400 mt-0.5">The 3 colors most customers need. Changing one updates every matching field below — each field stays individually editable if you need finer control.</p>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-4" id="quickColorRows"></div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div class="mb-5">
           <h3 class="text-base font-semibold text-slate-800">Chat Theme &amp; Colors</h3>
           <p class="text-xs text-slate-400 mt-0.5">Click a section to edit its colors — the preview highlights it in real time</p>
         </div>
@@ -227,12 +235,20 @@
       <!-- FAQ Cards panel -->
       <div id="panel-faq" class="panel">
         <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-          <div class="mb-5 flex items-center justify-between">
+          <div class="mb-5 flex items-start justify-between">
             <div>
               <h3 class="text-base font-semibold text-slate-800">FAQ Cards</h3>
-              <p class="text-xs text-slate-400 mt-0.5">Set up quick-reply FAQ cards for visitors — up to 4 cards, each shown live in the preview.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Set up quick-reply FAQ cards for visitors — up to 4 cards, each shown live in the preview. Card count and question count are shared across all languages.</p>
             </div>
-            <span id="faqCountBadge" class="text-[11px] text-slate-400"></span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span id="faqCountBadge" class="text-[11px] text-slate-400"></span>
+              <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg" id="faqLangSwitcher"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 pt-1 pb-3">
+            <div class="flex-1 h-px bg-slate-100"></div>
+            <span id="faqLangContentLabel" class="text-[10px] text-slate-400 font-medium uppercase tracking-wider px-1">繁體中文 內容</span>
+            <div class="flex-1 h-px bg-slate-100"></div>
           </div>
           <div id="faqCardsList" class="space-y-4"></div>
           <button id="faqAddBtn" onclick="addFaqCard()" class="mt-4 px-4 py-2 border border-dashed border-slate-300 text-slate-500 rounded-lg text-sm font-medium hover:border-teal-400 hover:text-teal-600 transition-colors cursor-pointer w-full">+ Add FAQ Card</button>
@@ -520,7 +536,7 @@ const ADVANCED = [
       {key:'--faq-body', label:'Card body', sub:'Card fill behind questions', def:'#ffffff'},
       {key:'--faq-header', label:'Card header', sub:'Category top bar', def:'#1a2540'},
       {key:'--faq-headertext', label:'Header text', sub:'Category card title', def:'#ffffff'},
-      {key:'--faq-link', label:'Link color', sub:'FAQ questions', def:'#9a6f20'},
+      {key:'--faq-link', label:'Link color', sub:'FAQ questions', def:'#c4a060'},
       {key:'--faq-related', label:'Related title', sub:'Related-question card title', def:'#1f2937'},
       {key:'--faq-nav', label:'Nav arrow', sub:'Left / right buttons', def:'#1a2540'},
     ]},
@@ -539,6 +555,78 @@ const ADVANCED = [
 ];
 const BRAND = { id:'brandColor', icon:'brush', label:'Brand Color', desc:'One color drives all CTAs and the bot identity: Send button · User bubble · Start-Chat button · Header & chat avatar · Focus ring. Decorative surfaces (FAQ cards, welcome banner gradient) keep theme defaults — fine-tune below.', mode:'chat', highlight:['pv-header','pv-inputbar','pv-usermsg'],
   fields:[ {key:'--brand', label:'Brand Color', sub:'', def:'#c4a060'} ] };
+
+// ---- Quick Colors: 3 customer-facing controls that broadcast into the granular fields below ----
+// One-way "linked" sync: setting a quick color pushes into every target var at once, but each
+// target field remains individually overridable afterward via its own row (no permanent binding).
+const QUICK_COLORS = [
+  { id:'primary', label:'主視覺色 Primary', desc:'Welcome Screen background, Welcome Card, Header, FAQ card header, user message bubble', def:'#1a2540',
+    targets:['--header-bg','--card-bg','--botmsg-text','--botmsg-name','--input-send','--input-text','--launcher-bg','--user-bg','--faq-header','--faq-nav'] },
+  { id:'accent', label:'點綴色 Accent', desc:'Bot Icon background, Start Chat button, FAQ question text', def:'#c4a060',
+    targets:['--brand','--header-icon','--welcome-start','--faq-link'] },
+  { id:'welcomeText', label:'Welcome Message 文字顏色', desc:'Welcome Screen subtitle text', def:'#8fa0c0',
+    targets:['--welcome-subtitle'] },
+];
+function lightenHex(hex, percent){
+  hex = (hex||'').replace('#','');
+  if(hex.length !== 6) return '#'+hex;
+  const num = parseInt(hex,16);
+  let r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+  r = Math.round(r + (255-r)*percent/100);
+  g = Math.round(g + (255-g)*percent/100);
+  b = Math.round(b + (255-b)*percent/100);
+  return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function quickColorCurrent(qc){ return getVar(qc.targets[0]) || qc.def; }
+function setQuickColor(qcId, hex){
+  const qc = QUICK_COLORS.find(q=>q.id===qcId);
+  if(!qc) return;
+  qc.targets.forEach(k=>setVar(k, hex));
+  if(qc.id === 'primary'){
+    setVar('--welcome-bg', `linear-gradient(160deg, ${hex} 0%, ${lightenHex(hex,8)} 100%)`);
+  }
+  renderAll();
+}
+function resetQuickColor(qcId){
+  const qc = QUICK_COLORS.find(q=>q.id===qcId);
+  if(!qc) return;
+  setQuickColor(qcId, qc.def);
+}
+function quickColorRowHTML(qc){
+  const current = quickColorCurrent(qc);
+  return `
+  <div class="space-y-1.5 border border-slate-200 rounded-xl p-3.5">
+    <div class="flex items-start justify-between">
+      <div class="min-h-[32px]">
+        <p class="text-[12.5px] font-medium text-slate-700">${qc.label}</p>
+        <p class="text-[10.5px] text-slate-400">${qc.desc}</p>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0 mt-0.5">
+        <div class="w-5 h-5 rounded border border-slate-200" style="background-color:${current}"></div>
+        <button onclick="resetQuickColor('${qc.id}')" class="text-[10px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">Reset</button>
+      </div>
+    </div>
+    <div class="space-y-2">
+      <div class="flex flex-wrap gap-1.5">
+        ${PRESETS.map(p=>`<button class="preset-swatch ${current.toLowerCase()===p?'selected':''}" style="background-color:${p};border-color:${current.toLowerCase()===p?'#1e293b':'transparent'}" onclick="setQuickColor('${qc.id}','${p}')"></button>`).join('')}
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="relative w-8 h-8 shrink-0 cursor-pointer">
+          <div class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden" style="background-color:${current}"></div>
+          <input type="color" value="${current}" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" oninput="setQuickColor('${qc.id}',this.value)">
+        </div>
+        <div class="flex items-center flex-1 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-colors">
+          <span class="px-2 text-xs text-slate-400 select-none border-r border-slate-200 bg-slate-50 h-full flex items-center py-1.5">#</span>
+          <input type="text" maxlength="6" value="${current.replace('#','')}" class="flex-1 px-2 py-1.5 text-xs font-mono text-slate-700 focus:outline-none bg-white"
+            onchange="if(/^[0-9a-fA-F]{6}$/.test(this.value)){ setQuickColor('${qc.id}','#'+this.value); } else { this.value=quickColorCurrent(QUICK_COLORS.find(q=>q.id==='${qc.id}')).replace('#',''); }">
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function renderQuickColors(){
+  document.getElementById('quickColorRows').innerHTML = QUICK_COLORS.map(quickColorRowHTML).join('');
+}
 
 // The header subtitle is NOT hardcoded to any one hotel - in production this would come from
 // the project record (same lookup pattern as getProjectId() in AVA basic settings). For this
@@ -616,6 +704,7 @@ function rowHTML(section, small){
 }
 
 function renderAll(){
+  renderQuickColors();
   document.getElementById('brandRow').innerHTML = rowHTML(BRAND);
   document.getElementById('insideChatRows').innerHTML = SECTIONS.map(s=>rowHTML(s)).join('');
   document.getElementById('onWebsiteRows').innerHTML = ON_WEBSITE.map(s=>rowHTML(s)).join('');
@@ -760,10 +849,19 @@ function switchPanel(id){
 }
 
 // ---- FAQ Cards ----
+// Each card/question holds all 3 languages in one object, so add/remove always operates on a
+// single shared array — card count and question count can never drift between languages.
 let faqCards = [
-  { title:'General FAQ', questions:['What are your hours?','How to reset password?','Contact support'] }
+  { titles:{ en:'General FAQ', zh:'常見問題', ja:'よくある質問' },
+    questions:[
+      { en:'What are your hours?', zh:'營業時間是？', ja:'営業時間はいつですか？' },
+      { en:'How to reset password?', zh:'如何重設密碼？', ja:'パスワードのリセット方法は？' },
+      { en:'Contact support', zh:'聯絡客服', ja:'サポートに問い合わせる' },
+    ] }
 ];
 let currentFaqIndex = 0;
+function newFaqQuestion(){ return { en:'New question', zh:'新問題', ja:'新しい質問' }; }
+function newFaqCard(){ return { titles:{ en:'New FAQ', zh:'新常見問題', ja:'新しいFAQ' }, questions:[newFaqQuestion()] }; }
 
 function escapeAttr(s){
   return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -773,11 +871,13 @@ function renderFaqEditor(){
   const list = document.getElementById('faqCardsList');
   document.getElementById('faqCountBadge').textContent = faqCards.length + ' / 4 cards';
   document.getElementById('faqAddBtn').classList.toggle('hidden', faqCards.length >= 4);
+  const labelEl = document.getElementById('faqLangContentLabel');
+  if(labelEl) labelEl.textContent = LANGS[currentLang].contentLabel;
   list.innerHTML = faqCards.map((card, ci) => `
     <div class="faq-card-box">
       <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Card Title</label>
       <div class="flex items-center gap-2 mb-4">
-        <input type="text" value="${escapeAttr(card.title)}" placeholder="Card title, e.g. General FAQ" oninput="updateFaqTitle(${ci}, this.value)" class="flex-1 px-3 py-2 border border-slate-300 bg-slate-50 rounded-lg text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500">
+        <input type="text" value="${escapeAttr(card.titles[currentLang])}" placeholder="Card title, e.g. General FAQ" oninput="updateFaqTitle(${ci}, this.value)" class="flex-1 px-3 py-2 border border-slate-300 bg-slate-50 rounded-lg text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500">
         <button onclick="removeFaqCard(${ci})" class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer text-xs px-2 shrink-0">Remove card</button>
       </div>
       <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Questions</label>
@@ -787,7 +887,7 @@ function renderFaqEditor(){
             <span class="faq-drag-handle text-slate-300 shrink-0 select-none" title="Drag to reorder">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg>
             </span>
-            <input type="text" value="${escapeAttr(q)}" placeholder="Question text" oninput="updateFaqQuestion(${ci},${qi},this.value)" class="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500">
+            <input type="text" value="${escapeAttr(q[currentLang])}" placeholder="Question text" oninput="updateFaqQuestion(${ci},${qi},this.value)" class="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-[13px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500">
             <button onclick="removeFaqQuestion(${ci},${qi})" class="text-slate-300 hover:text-red-500 transition-colors cursor-pointer px-1 shrink-0">✕</button>
           </div>`).join('')}
       </div>
@@ -833,29 +933,29 @@ function faqDragEnd(ev){
 
 function addFaqCard(){
   if(faqCards.length >= 4) return;
-  faqCards.push({ title:'New FAQ', questions:['New question'] });
+  faqCards.push(newFaqCard());
   renderFaqEditor();
 }
 function removeFaqCard(i){
   faqCards.splice(i,1);
-  if(faqCards.length===0){ faqCards.push({title:'General FAQ', questions:['What are your hours?']}); }
+  if(faqCards.length===0){ faqCards.push(newFaqCard()); }
   if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
   renderFaqEditor();
 }
-function updateFaqTitle(i, val){ faqCards[i].title = val; renderFaqPreview(); }
-function addFaqQuestion(i){ faqCards[i].questions.push('New question'); renderFaqEditor(); }
+function updateFaqTitle(i, val){ faqCards[i].titles[currentLang] = val; renderFaqPreview(); }
+function addFaqQuestion(i){ faqCards[i].questions.push(newFaqQuestion()); renderFaqEditor(); }
 function removeFaqQuestion(i, qi){
   faqCards[i].questions.splice(qi,1);
   renderFaqEditor();
 }
-function updateFaqQuestion(i, qi, val){ faqCards[i].questions[qi] = val; renderFaqPreview(); }
+function updateFaqQuestion(i, qi, val){ faqCards[i].questions[qi][currentLang] = val; renderFaqPreview(); }
 
 function renderFaqPreview(){
   if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
-  const card = faqCards[currentFaqIndex] || { title:'', questions:[] };
-  document.getElementById('pv-faq-title').textContent = card.title;
-  document.getElementById('pv-faq-questions').innerHTML = card.questions.map((q) => {
-    return `<p class="text-[0.65625em] hover:underline cursor-pointer" style="color:var(--faq-link);">${escapeAttr(q)}</p>`;
+  const card = faqCards[currentFaqIndex] || { titles:{}, questions:[] };
+  document.getElementById('pv-faq-title').textContent = card.titles ? (card.titles[currentLang]||'') : '';
+  document.getElementById('pv-faq-questions').innerHTML = (card.questions||[]).map((q) => {
+    return `<p class="text-[0.65625em] hover:underline cursor-pointer" style="color:var(--faq-link);">${escapeAttr(q[currentLang]||'')}</p>`;
   }).join('');
   document.getElementById('pv-faq-nav').classList.toggle('hidden', faqCards.length <= 1);
   document.getElementById('pv-faq-prev').classList.toggle('faq-nav-disabled', currentFaqIndex <= 0);
@@ -892,13 +992,28 @@ function renderLangSwitcher(){
   }).join('');
 }
 
+// Same LANGS/currentLang state as the Greeting switcher above — one language selection drives
+// both panels (and the phone preview) so editors translate one language at a time across the form.
+function renderFaqLangSwitcher(){
+  const el = document.getElementById('faqLangSwitcher');
+  if(!el) return;
+  el.innerHTML = Object.keys(LANGS).map(key=>{
+    const active = key===currentLang;
+    return `<button onclick="setLang('${key}')" class="relative flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md transition-all duration-150 cursor-pointer ${active?'bg-white text-slate-800 shadow-sm':'text-slate-500 hover:text-slate-700'}">
+      ${LANGS[key].label}
+    </button>`;
+  }).join('');
+}
+
 function setLang(key){
   currentLang = key;
   renderLangSwitcher();
+  renderFaqLangSwitcher();
   document.getElementById('langContentLabel').textContent = LANGS[key].contentLabel;
   document.getElementById('welcomeMsgInput').value = LANGS[key].welcome;
   document.getElementById('hintTextInput').value = LANGS[key].hint;
   syncPreviewFromGreeting();
+  renderFaqEditor();
 }
 
 function onGreetingFieldInput(field, value){
@@ -942,6 +1057,7 @@ function onBotIconInput(value){
 
 function initGreeting(){
   renderLangSwitcher();
+  renderFaqLangSwitcher();
   document.getElementById('langContentLabel').textContent = LANGS[currentLang].contentLabel;
   document.getElementById('welcomeMsgInput').value = LANGS[currentLang].welcome;
   document.getElementById('hintTextInput').value = LANGS[currentLang].hint;
