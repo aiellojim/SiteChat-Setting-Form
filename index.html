@@ -166,7 +166,7 @@
         <div class="grid sm:grid-cols-3 gap-4" id="quickColorRows"></div>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+      <div id="granularColorsCard" class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <div class="mb-5">
           <h3 class="text-base font-semibold text-slate-800">Chat Theme &amp; Colors</h3>
           <p class="text-xs text-slate-400 mt-0.5">Click a section to edit its colors — the preview highlights it in real time.</p>
@@ -555,6 +555,16 @@ const ADVANCED = [
 ];
 const BRAND = { id:'brandColor', icon:'brush', label:'Brand Color', desc:'One color drives all CTAs and the bot identity: Send button · User bubble · Start-Chat button · Header & chat avatar · Focus ring. Decorative surfaces (FAQ cards, welcome banner gradient) keep theme defaults — fine-tune below.', mode:'chat', highlight:['pv-header','pv-inputbar','pv-usermsg'],
   fields:[ {key:'--brand', label:'Brand Color', sub:'', def:'#c4a060'} ] };
+
+// Front-end-only visibility switch: when false, the whole granular "Chat Theme & Colors" card
+// (Custom Colors, Text Size, Inside the Chat, On Your Website, Advanced) is hidden from customers.
+// Nothing structural changes — SECTIONS/ON_WEBSITE/ADVANCED/BRAND and all render/save functions
+// keep running underneath, so flipping this back to true brings everything back instantly.
+const SHOW_GRANULAR_COLORS = false;
+function applyGranularColorsVisibility(){
+  const el = document.getElementById('granularColorsCard');
+  if(el) el.classList.toggle('hidden', !SHOW_GRANULAR_COLORS);
+}
 
 // ---- Quick Colors: 3 customer-facing controls that broadcast into the granular fields below ----
 // One-way "linked" sync: setting a quick color pushes into every target var at once, but each
@@ -1070,6 +1080,7 @@ initGreeting();
 renderSidebar();
 renderFaqEditor();
 applyHighlight();
+applyGranularColorsVisibility();
 </script>
 </body>
 </html>
