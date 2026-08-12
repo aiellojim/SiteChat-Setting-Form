@@ -91,7 +91,7 @@
 
 <div class="ava-layout">
   <nav class="ava-sidebar" id="avaSidebar"></nav>
-  <main class="ava-content">
+  <main class="ava-content" id="avaContent">
     <div class="max-w-6xl mx-auto">
 
   <div class="flex gap-6 items-start">
@@ -147,9 +147,6 @@
             <input id="hintTextInput" type="text" placeholder="例如：嗨！有任何問題都可以找我們聊聊" oninput="onGreetingFieldInput('hint', this.value)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors">
           </div>
 
-          <div class="flex items-center gap-3 pt-1">
-            <span id="greetingAutosaveStatus" class="text-xs text-slate-400 font-medium">Saved</span>
-          </div>
         </div>
       </div>
 
@@ -224,9 +221,6 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-3 mt-5">
-          <span id="themeAutosaveStatus" class="text-xs text-slate-400 font-medium">Saved</span>
-        </div>
       </div>
 
       </div> <!-- /panel-theme -->
@@ -664,7 +658,13 @@ function renderBrandSub(){
 
 // ---- Load / save against Supabase, keyed by PROJECT_ID ----
 async function loadFromSupabase(){
-  if(!PROJECT_ID) return;
+  // No link token at all in the URL - same as AVA basic settings' "no-id" case: work in a
+  // local-only demo state, show the orange banner, and skip Supabase entirely.
+  if(!PROJECT_ID){
+    markSaved('no-id');
+    showBanner('No project link found in this URL - working in local-only mode, nothing will sync to the cloud. / 此網址未帶有效的專案連結，目前僅為本機模式，不會同步至雲端。');
+    return;
+  }
   isHydrating = true; // suppress autosave while we populate fields from saved data below
   const [projRes, settingsRes, faqRes] = await Promise.all([
     sb.from('projects').select('id,name').eq('id', PROJECT_ID).maybeSingle(),
@@ -675,7 +675,14 @@ async function loadFromSupabase(){
   if(settingsRes.error) console.error('load sitechat_settings failed', settingsRes.error);
   if(faqRes.error) console.error('load sitechat_faq_cards failed', faqRes.error);
 
-  if(projRes.data){ PROJECT_NAME = projRes.data.name; }
+  // Link has an id, but it doesn't match any project - same as AVA's "not-found" case: still
+  // usable, but flagged so nobody mistakes it for a synced, real hotel link.
+  if(!projRes.data){
+    markSaved('not-found');
+    showBanner('Hotel ID not found for this link - you can still fill out the form, but it will not be saved to the cloud until this is resolved with your Aiello contact. / 找不到此連結對應的飯店專案，仍可繼續填寫，但在確認前不會同步至雲端，請與 Aiello 聯繫確認。');
+  } else {
+    PROJECT_NAME = projRes.data.name;
+  }
   renderBrandSub();
 
   const settings = settingsRes.data;
@@ -920,28 +927,44 @@ function setTextSize(key, px){
   scheduleAutosave();
 }
 
-// ---- Autosave: every edit debounces into a save, matching AVA basic settings' pattern where
-// persistence happens continuously and "Submit / Update" is a separate notify-only action. ----
+// ---- Autosave: every edit debounces into a save. Header indicator + banner behavior mirror
+// AVA basic settings exactly (same formatClock24/markSaved/showBanner shapes) - single indicator
+// in the header only, no per-panel "Saved" text. ----
 let autosaveTimer = null;
-let autosaveGen = 0;
 let isHydrating = false;
-function setAutosaveStatus(text){
-  ['headerSaveIndicator','greetingAutosaveStatus','themeAutosaveStatus'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.textContent = text;
-  });
+
+// Language-neutral 24-hour HH:MM:SS, same as AVA basic settings' formatClock24().
+function formatClock24(d){
+  const p2 = n => String(n).padStart(2,'0');
+  return p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds());
 }
+function markSaved(status){
+  const el = document.getElementById('headerSaveIndicator');
+  if(!el) return;
+  if(status === 'ok'){ el.textContent = 'Saved ' + formatClock24(new Date()); el.style.color = '#14b8a6'; }
+  else if(status === 'error'){ el.textContent = 'Sync error – retrying'; el.style.color = '#dc2626'; }
+  else if(status === 'not-found'){ el.textContent = 'Not linked to a project - not saving'; el.style.color = '#f59e0b'; }
+  else { el.textContent = 'Local only (no project link)'; el.style.color = '#f59e0b'; }
+}
+function showBanner(text){
+  const el = document.getElementById('avaContent');
+  if(!el || document.getElementById('noProjectBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'noProjectBanner';
+  banner.style.cssText = 'background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:12px 16px;border-radius:8px;margin:0 0 14px;font-size:13px;';
+  banner.textContent = text;
+  el.prepend(banner);
+}
+
 function scheduleAutosave(){
   if(!PROJECT_ID || isHydrating) return; // no link token, or this call came from loading saved data back in
-  setAutosaveStatus('Unsaved changes…');
   clearTimeout(autosaveTimer);
-  const gen = ++autosaveGen;
-  autosaveTimer = setTimeout(async ()=>{
-    setAutosaveStatus('Saving…');
-    const result = await saveToSupabase();
-    if(gen !== autosaveGen) return; // a newer edit landed while this save was in flight
-    setAutosaveStatus(result.ok ? 'Saved' : 'Save failed');
-  }, 1000);
+  autosaveTimer = setTimeout(runSync, 250);
+}
+async function runSync(){
+  if(!PROJECT_ID){ markSaved('no-id'); return; }
+  const result = await saveToSupabase();
+  markSaved(result.ok ? 'ok' : 'error');
 }
 
 // "Submit / Update" no longer does the saving itself (autosave already handles that on every
@@ -949,20 +972,11 @@ function scheduleAutosave(){
 // Function AVA basic settings / AVA UI settings use, tagged with source:'sitechat_settings' so
 // the notification email is labeled correctly (see SOURCE_LABELS in that function).
 async function doSave(){
-  const hdr = document.getElementById('headerSaveIndicator');
-  if(!PROJECT_ID){
-    setAutosaveStatus('No project id in URL — nothing to save.');
-    setTimeout(()=>setAutosaveStatus('Saved'), 2200);
-    return;
-  }
+  if(!PROJECT_ID){ markSaved('no-id'); return; }
   clearTimeout(autosaveTimer);
-  if(hdr) hdr.textContent = 'Saving…';
   const result = await saveToSupabase();
-  if(!result.ok){
-    setAutosaveStatus('Save failed: ' + (result.reason||'unknown error'));
-    return;
-  }
-  setAutosaveStatus('Notifying…');
+  markSaved(result.ok ? 'ok' : 'error');
+  if(!result.ok) return;
   try{
     const res = await fetch(SUPABASE_URL + '/functions/v1/form-submit-notify', {
       method: 'POST',
@@ -971,12 +985,10 @@ async function doSave(){
     });
     const body = await res.json().catch(()=>({}));
     if(!res.ok || body.error){ throw new Error(body.error || ('HTTP ' + res.status)); }
-    setAutosaveStatus('Submitted ✓');
-    setTimeout(()=>setAutosaveStatus('Saved'), 2200);
   } catch(err){
+    // Fire-and-forget, same as AVA's notifySubmit(): a notify failure must never block or
+    // overwrite the save-status the user just saw, only log it.
     console.error('form-submit-notify failed', err);
-    setAutosaveStatus('Saved (notify failed)');
-    setTimeout(()=>setAutosaveStatus('Saved'), 2200);
   }
 }
 
