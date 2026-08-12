@@ -148,7 +148,7 @@
           </div>
 
           <div class="flex items-center gap-3 pt-1">
-            <button onclick="doSave()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors duration-150 cursor-pointer">Save</button>
+            <span id="greetingAutosaveStatus" class="text-xs text-slate-400 font-medium">Saved</span>
           </div>
         </div>
       </div>
@@ -225,8 +225,7 @@
         </div>
 
         <div class="flex items-center gap-3 mt-5">
-          <button onclick="doSave()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors duration-150 cursor-pointer">Save</button>
-          <span id="saveToast" class="fade-toast opacity-0 text-xs text-teal-600 font-medium">Saved ✓</span>
+          <span id="themeAutosaveStatus" class="text-xs text-slate-400 font-medium">Saved</span>
         </div>
       </div>
 
@@ -614,6 +613,7 @@ function setQuickColor(qcId, hex){
     setVar('--welcome-bg', `linear-gradient(160deg, ${hex} 0%, ${lightenHex(hex,8)} 100%)`);
   }
   renderAll();
+  scheduleAutosave();
 }
 function resetQuickColor(qcId){
   const qc = QUICK_COLORS.find(q=>q.id===qcId);
@@ -665,6 +665,7 @@ function renderBrandSub(){
 // ---- Load / save against Supabase, keyed by PROJECT_ID ----
 async function loadFromSupabase(){
   if(!PROJECT_ID) return;
+  isHydrating = true; // suppress autosave while we populate fields from saved data below
   const [projRes, settingsRes, faqRes] = await Promise.all([
     sb.from('projects').select('id,name').eq('id', PROJECT_ID).maybeSingle(),
     sb.from('sitechat_settings').select('*').eq('project_id', PROJECT_ID).maybeSingle(),
@@ -708,6 +709,7 @@ async function loadFromSupabase(){
   renderAll();
   initGreeting();
   renderFaqEditor();
+  isHydrating = false;
 }
 
 // FAQ cards are simplest to fully replace on every save (max 4 cards, single editor at a time) -
@@ -834,16 +836,19 @@ function toggleRow(id){
 function setField(sectionId, key, value){
   setVar(key, value);
   renderAll();
+  scheduleAutosave();
 }
 function resetField(sectionId, key, def){
   setVar(key, def);
   renderAll();
+  scheduleAutosave();
 }
 function resetAll(){
   allSections().forEach(s=>s.fields.forEach(f=>setVar(f.key, f.def)));
   openRowId = null;
   setMode('chat', true);
   renderAll();
+  scheduleAutosave();
 }
 
 function toggleAdvanced(){
@@ -912,32 +917,66 @@ function setTextSize(key, px){
   window.__textSize = key;
   setVar('--text-scale', px);
   renderTextSizeGroup();
+  scheduleAutosave();
 }
 
+// ---- Autosave: every edit debounces into a save, matching AVA basic settings' pattern where
+// persistence happens continuously and "Submit / Update" is a separate notify-only action. ----
+let autosaveTimer = null;
+let autosaveGen = 0;
+let isHydrating = false;
+function setAutosaveStatus(text){
+  ['headerSaveIndicator','greetingAutosaveStatus','themeAutosaveStatus'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = text;
+  });
+}
+function scheduleAutosave(){
+  if(!PROJECT_ID || isHydrating) return; // no link token, or this call came from loading saved data back in
+  setAutosaveStatus('Unsaved changes…');
+  clearTimeout(autosaveTimer);
+  const gen = ++autosaveGen;
+  autosaveTimer = setTimeout(async ()=>{
+    setAutosaveStatus('Saving…');
+    const result = await saveToSupabase();
+    if(gen !== autosaveGen) return; // a newer edit landed while this save was in flight
+    setAutosaveStatus(result.ok ? 'Saved' : 'Save failed');
+  }, 1000);
+}
+
+// "Submit / Update" no longer does the saving itself (autosave already handles that on every
+// edit) - it flushes any pending save immediately, then calls the same form-submit-notify Edge
+// Function AVA basic settings / AVA UI settings use, tagged with source:'sitechat_settings' so
+// the notification email is labeled correctly (see SOURCE_LABELS in that function).
 async function doSave(){
-  const toast = document.getElementById('saveToast');
   const hdr = document.getElementById('headerSaveIndicator');
   if(!PROJECT_ID){
-    toast.textContent = 'No project id in URL — nothing to save to.';
-    toast.style.opacity = '1';
-    setTimeout(()=>{ toast.style.opacity = '0'; toast.textContent = 'Saved ✓'; }, 2200);
+    setAutosaveStatus('No project id in URL — nothing to save.');
+    setTimeout(()=>setAutosaveStatus('Saved'), 2200);
     return;
   }
+  clearTimeout(autosaveTimer);
   if(hdr) hdr.textContent = 'Saving…';
   const result = await saveToSupabase();
-  if(result.ok){
-    toast.textContent = 'Saved ✓';
-    toast.style.opacity = '1';
-    setTimeout(()=>{ toast.style.opacity = '0'; }, 1800);
-    if(hdr){
-      hdr.textContent = 'Submitted ✓';
-      setTimeout(()=>{ hdr.textContent = 'Saved'; }, 2200);
-    }
-  } else {
-    toast.textContent = 'Save failed: ' + (result.reason||'unknown error');
-    toast.style.opacity = '1';
-    setTimeout(()=>{ toast.style.opacity = '0'; toast.textContent = 'Saved ✓'; }, 3000);
-    if(hdr) hdr.textContent = 'Save failed';
+  if(!result.ok){
+    setAutosaveStatus('Save failed: ' + (result.reason||'unknown error'));
+    return;
+  }
+  setAutosaveStatus('Notifying…');
+  try{
+    const res = await fetch(SUPABASE_URL + '/functions/v1/form-submit-notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ projectId: PROJECT_ID, formUrl: location.href, source: 'sitechat_settings' }),
+    });
+    const body = await res.json().catch(()=>({}));
+    if(!res.ok || body.error){ throw new Error(body.error || ('HTTP ' + res.status)); }
+    setAutosaveStatus('Submitted ✓');
+    setTimeout(()=>setAutosaveStatus('Saved'), 2200);
+  } catch(err){
+    console.error('form-submit-notify failed', err);
+    setAutosaveStatus('Saved (notify failed)');
+    setTimeout(()=>setAutosaveStatus('Saved'), 2200);
   }
 }
 
@@ -1045,6 +1084,7 @@ function faqDrop(ci, qi, ev){
   list.splice(qi, 0, moved);
   faqDragInfo = null;
   renderFaqEditor();
+  scheduleAutosave();
 }
 function faqDragEnd(ev){
   ev.currentTarget.classList.remove('dragging');
@@ -1056,20 +1096,23 @@ function addFaqCard(){
   if(faqCards.length >= 4) return;
   faqCards.push(newFaqCard());
   renderFaqEditor();
+  scheduleAutosave();
 }
 function removeFaqCard(i){
   faqCards.splice(i,1);
   if(faqCards.length===0){ faqCards.push(newFaqCard()); }
   if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
   renderFaqEditor();
+  scheduleAutosave();
 }
-function updateFaqTitle(i, val){ faqCards[i].titles[currentLang] = val; renderFaqPreview(); }
-function addFaqQuestion(i){ faqCards[i].questions.push(newFaqQuestion()); renderFaqEditor(); }
+function updateFaqTitle(i, val){ faqCards[i].titles[currentLang] = val; renderFaqPreview(); scheduleAutosave(); }
+function addFaqQuestion(i){ faqCards[i].questions.push(newFaqQuestion()); renderFaqEditor(); scheduleAutosave(); }
 function removeFaqQuestion(i, qi){
   faqCards[i].questions.splice(qi,1);
   renderFaqEditor();
+  scheduleAutosave();
 }
-function updateFaqQuestion(i, qi, val){ faqCards[i].questions[qi][currentLang] = val; renderFaqPreview(); }
+function updateFaqQuestion(i, qi, val){ faqCards[i].questions[qi][currentLang] = val; renderFaqPreview(); scheduleAutosave(); }
 
 function renderFaqPreview(){
   if(currentFaqIndex >= faqCards.length) currentFaqIndex = Math.max(0, faqCards.length-1);
@@ -1140,12 +1183,14 @@ function setLang(key){
 function onGreetingFieldInput(field, value){
   LANGS[currentLang][field] = value;
   syncPreviewFromGreeting();
+  scheduleAutosave();
 }
 
 function onBotNameInput(value){
   const name = value || 'Bot';
   document.querySelectorAll('.js-botname').forEach(el=>el.textContent=name);
   document.getElementById('botNameInitial').textContent = name.trim().charAt(0).toUpperCase() || 'M';
+  scheduleAutosave();
 }
 
 function syncPreviewFromGreeting(){
@@ -1174,6 +1219,7 @@ function renderBotAvatars(){
 function onBotIconInput(value){
   botIconUrl = (value || '').trim();
   renderBotAvatars();
+  scheduleAutosave();
 }
 
 function initGreeting(){
@@ -1185,6 +1231,20 @@ function initGreeting(){
   syncPreviewFromGreeting();
   renderBotAvatars();
 }
+
+// Expose everything referenced from inline HTML attributes (onclick="...", oninput="...", etc.)
+// to window. This is required because <script type="module"> — needed for `import` above to pull
+// in the Supabase client — scopes all top-level function/const declarations to the module instead
+// of the global object, unlike a classic <script>. Inline event attributes always run in global
+// scope, so without this every button/input in the page silently fails to do anything on click.
+Object.assign(window, {
+  toggleRow, setField, resetField, resetAll, toggleAdvanced, setTextSize,
+  setMode, doSave, switchPanel,
+  setLang, onGreetingFieldInput, onBotNameInput, onBotIconInput,
+  addFaqCard, removeFaqCard, updateFaqTitle, addFaqQuestion, removeFaqQuestion, updateFaqQuestion,
+  faqPrev, faqNext, faqDragStart, faqDragOver, faqDragLeave, faqDrop, faqDragEnd,
+  setQuickColor, resetQuickColor, quickColorCurrent, QUICK_COLORS, getVar,
+});
 
 // init
 renderBrandSub();
