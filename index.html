@@ -84,7 +84,7 @@
     </div>
   </div>
   <div class="header-right">
-    <button class="btn primary" onclick="doSave()">Submit / Update</button>
+    <button class="btn primary" onclick="openSubmitConfirmModal()">Submit / Update</button>
     <span class="save-indicator" id="headerSaveIndicator">Saved</span>
   </div>
 </header>
@@ -992,6 +992,56 @@ async function doSave(){
   }
 }
 
+// ---- Submit confirm modal: same confirm -> success two-step flow as AVA basic settings'
+// renderSubmitConfirmModal(), English copy only (AVA's is trilingual because it mirrors the
+// page's own display language - this form doesn't need that). ----
+let submitModalState = null; // null | {step:'confirm'} | {step:'done'}
+function closeSubmitConfirmModal(){ submitModalState = null; renderSubmitConfirmModal(); }
+function openSubmitConfirmModal(){ submitModalState = {step:'confirm'}; renderSubmitConfirmModal(); }
+function renderSubmitConfirmModal(){
+  let el = document.getElementById('submitConfirmModal');
+  if(!submitModalState){ if(el) el.remove(); return; }
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'submitConfirmModal';
+    document.body.appendChild(el);
+  }
+  el.className = 'fixed inset-0 bg-black/40 flex items-center justify-center z-[999]';
+  const iconHtml = '<div class="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-3.5 text-[22px]" style="background:#e6f6f4;color:#0f766e;">✓</div>';
+  if(submitModalState.step === 'confirm'){
+    el.innerHTML = `
+      <div class="bg-white rounded-xl p-6 text-center" style="width:380px;max-width:90vw;">
+        ${iconHtml}
+        <p class="text-sm text-slate-700 leading-relaxed mb-5">Please confirm the form is complete.<br>Aiello will be notified by email.</p>
+        <div class="flex items-center justify-center gap-2.5">
+          <button type="button" id="submitConfirmCancel" class="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
+          <button type="button" id="submitConfirmOk" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">Submit</button>
+        </div>
+      </div>`;
+    el.onclick = (e)=>{ if(e.target===el) closeSubmitConfirmModal(); };
+    el.querySelector('#submitConfirmCancel').onclick = closeSubmitConfirmModal;
+    el.querySelector('#submitConfirmOk').onclick = async ()=>{
+      const btn = el.querySelector('#submitConfirmOk');
+      btn.textContent = 'Submitting…';
+      btn.disabled = true;
+      await doSave();
+      submitModalState = {step:'done'};
+      renderSubmitConfirmModal();
+    };
+  } else {
+    el.innerHTML = `
+      <div class="bg-white rounded-xl p-6 text-center" style="width:380px;max-width:90vw;">
+        ${iconHtml}
+        <p class="text-sm text-slate-700 leading-relaxed mb-5">Submitted. Thank you!</p>
+        <div class="flex items-center justify-center">
+          <button type="button" id="submitConfirmClose" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors cursor-pointer">OK</button>
+        </div>
+      </div>`;
+    el.onclick = (e)=>{ if(e.target===el) closeSubmitConfirmModal(); };
+    el.querySelector('#submitConfirmClose').onclick = closeSubmitConfirmModal;
+  }
+}
+
 // ---- AVA sidebar / panel navigation ----
 const NAV_ITEMS = [
   { id:'greeting', label:'Greeting' },
@@ -1251,7 +1301,7 @@ function initGreeting(){
 // scope, so without this every button/input in the page silently fails to do anything on click.
 Object.assign(window, {
   toggleRow, setField, resetField, resetAll, toggleAdvanced, setTextSize,
-  setMode, doSave, switchPanel,
+  setMode, doSave, switchPanel, openSubmitConfirmModal,
   setLang, onGreetingFieldInput, onBotNameInput, onBotIconInput,
   addFaqCard, removeFaqCard, updateFaqTitle, addFaqQuestion, removeFaqQuestion, updateFaqQuestion,
   faqPrev, faqNext, faqDragStart, faqDragOver, faqDragLeave, faqDrop, faqDragEnd,
