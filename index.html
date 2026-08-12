@@ -53,6 +53,8 @@
   .ava-header .btn.primary{background:var(--ava-primary);color:#fff;border:1px solid var(--ava-primary);padding:0 14px;height:38px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
   .ava-header .btn.primary:hover{background:var(--ava-primary-dark);}
   .ava-header .save-indicator{font-size:13px;color:var(--ava-accent);white-space:nowrap;}
+  .ava-header .icon-btn{border:none;background:transparent;font-size:20px;cursor:pointer;padding:4px 8px;color:var(--ava-text);}
+  .mobile-only{display:none;}
   .ava-layout{display:flex;min-height:calc(100vh - 64px);align-items:stretch;}
   .ava-sidebar{width:250px;flex-shrink:0;background:var(--ava-sidebar-bg);color:var(--ava-sidebar-text);overflow-y:auto;padding:10px 0;position:sticky;top:64px;height:calc(100vh - 64px);}
   .ava-sidebar .nav-group-label{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;padding:14px 18px 6px;}
@@ -72,12 +74,20 @@
   .faq-q-row.dragging{opacity:.4;}
   .faq-q-row.drag-over{outline:2px dashed #14b8a6;outline-offset:2px;border-radius:8px;}
   .faq-nav-disabled{opacity:.4;pointer-events:none;cursor:not-allowed;}
+  @media(max-width:860px){
+    .mobile-only{display:inline-block;}
+    .ava-sidebar{position:fixed;left:-250px;top:64px;height:calc(100vh - 64px);transition:left .2s;z-index:60;box-shadow:2px 0 12px rgba(0,0,0,.2);}
+    .ava-sidebar.open{left:0;}
+    .ava-content{padding:18px;}
+    .ava-header .brand-sub{display:none;}
+  }
 </style>
 </head>
 <body class="text-slate-800">
 
 <header class="ava-header">
   <div class="header-left">
+    <button id="menuToggle" class="icon-btn mobile-only" aria-label="menu">&#9776;</button>
     <div class="brand">
       <strong>Aiello SiteChat Settings</strong>
       <span class="brand-sub" id="brandSub">Theme &amp; FAQ Configuration</span>
@@ -160,7 +170,7 @@
           <h3 class="text-base font-semibold text-slate-800">Quick Colors</h3>
           <p class="text-xs text-slate-400 mt-0.5">The 3 colors most customers need. Changing one updates every matching field.</p>
         </div>
-        <div class="grid sm:grid-cols-3 gap-4" id="quickColorRows"></div>
+        <div class="space-y-3" id="quickColorRows"></div>
       </div>
 
       <div id="granularColorsCard" class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
@@ -582,11 +592,14 @@ function applyGranularColorsVisibility(){
 // target field remains individually overridable afterward via its own row (no permanent binding).
 const QUICK_COLORS = [
   { id:'primary', label:'Primary', def:'#1a2540',
-    targets:['--header-bg','--card-bg','--botmsg-text','--botmsg-name','--input-send','--input-text','--launcher-bg','--user-bg','--faq-header','--faq-nav'] },
+    targets:['--header-bg','--card-bg','--botmsg-text','--botmsg-name','--input-send','--input-text','--launcher-bg','--user-bg','--faq-header','--faq-nav'],
+    affects:['Header background','Chat & FAQ card backgrounds','Bot message & input text','Send button & launcher','User message bubble','Welcome screen background'] },
   { id:'accent', label:'Accent', def:'#c4a060',
-    targets:['--brand','--header-icon','--welcome-start','--faq-link'] },
+    targets:['--brand','--header-icon','--welcome-start','--faq-link'],
+    affects:['Bot avatar & brand icon','Header icon','Welcome screen "Start Chat" button','FAQ question links'] },
   { id:'welcomeText', label:'Welcome Message', def:'#8fa0c0',
-    targets:['--welcome-subtitle','--card-body'] },
+    targets:['--welcome-subtitle','--card-body'],
+    affects:['Welcome screen subtitle text','Chat card body text'] },
 ];
 function lightenHex(hex, percent){
   hex = (hex||'').replace('#','');
@@ -617,28 +630,36 @@ function resetQuickColor(qcId){
 function quickColorRowHTML(qc){
   const current = quickColorCurrent(qc);
   return `
-  <div class="space-y-3 border border-slate-200 rounded-xl p-3.5">
-    <div class="flex items-center justify-between">
+  <div class="border border-slate-200 rounded-xl p-3.5">
+    <div class="flex items-center justify-between mb-3">
       <p class="text-[12.5px] font-medium text-slate-700">${qc.label}</p>
       <div class="flex items-center gap-1.5 shrink-0">
         <div class="w-5 h-5 rounded border border-slate-200" style="background-color:${current}"></div>
         <button onclick="resetQuickColor('${qc.id}')" class="text-[10px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">Reset</button>
       </div>
     </div>
-    <div class="space-y-2">
-      <div class="flex flex-wrap gap-1.5">
-        ${PRESETS.map(p=>`<button class="preset-swatch ${current.toLowerCase()===p?'selected':''}" style="background-color:${p};border-color:${current.toLowerCase()===p?'#1e293b':'transparent'}" onclick="setQuickColor('${qc.id}','${p}')"></button>`).join('')}
+    <div class="flex items-start gap-6">
+      <div class="space-y-2 shrink-0">
+        <div class="flex flex-wrap gap-1.5 max-w-[180px]">
+          ${PRESETS.map(p=>`<button class="preset-swatch ${current.toLowerCase()===p?'selected':''}" style="background-color:${p};border-color:${current.toLowerCase()===p?'#1e293b':'transparent'}" onclick="setQuickColor('${qc.id}','${p}')"></button>`).join('')}
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative w-8 h-8 shrink-0 cursor-pointer">
+            <div class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden" style="background-color:${current}"></div>
+            <input type="color" value="${current}" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" oninput="setQuickColor('${qc.id}',this.value)">
+          </div>
+          <div class="flex items-center border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-colors">
+            <span class="px-2 text-xs text-slate-400 select-none border-r border-slate-200 bg-slate-50 h-full flex items-center py-1.5">#</span>
+            <input type="text" maxlength="6" value="${current.replace('#','')}" class="w-[72px] px-2 py-1.5 text-xs font-mono text-slate-700 focus:outline-none bg-white"
+              onchange="if(/^[0-9a-fA-F]{6}$/.test(this.value)){ setQuickColor('${qc.id}','#'+this.value); } else { this.value=quickColorCurrent(QUICK_COLORS.find(q=>q.id==='${qc.id}')).replace('#',''); }">
+          </div>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <div class="relative w-8 h-8 shrink-0 cursor-pointer">
-          <div class="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden" style="background-color:${current}"></div>
-          <input type="color" value="${current}" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" oninput="setQuickColor('${qc.id}',this.value)">
-        </div>
-        <div class="flex items-center flex-1 border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition-colors">
-          <span class="px-2 text-xs text-slate-400 select-none border-r border-slate-200 bg-slate-50 h-full flex items-center py-1.5">#</span>
-          <input type="text" maxlength="6" value="${current.replace('#','')}" class="flex-1 px-2 py-1.5 text-xs font-mono text-slate-700 focus:outline-none bg-white"
-            onchange="if(/^[0-9a-fA-F]{6}$/.test(this.value)){ setQuickColor('${qc.id}','#'+this.value); } else { this.value=quickColorCurrent(QUICK_COLORS.find(q=>q.id==='${qc.id}')).replace('#',''); }">
-        </div>
+      <div class="flex-1 min-w-0 border-l border-slate-100 pl-5">
+        <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Affects</p>
+        <ul class="space-y-1">
+          ${(qc.affects||[]).map(a=>`<li class="text-[11px] text-slate-500 flex items-start gap-1.5"><span class="text-slate-300 mt-0.5">&bull;</span><span>${a}</span></li>`).join('')}
+        </ul>
       </div>
     </div>
   </div>`;
@@ -1068,6 +1089,8 @@ function switchPanel(id){
   renderSidebar();
   renderAll();
   applyHighlight();
+  const sidebarEl = document.getElementById('avaSidebar');
+  if(sidebarEl) sidebarEl.classList.remove('open');
 }
 
 // ---- FAQ Cards ----
@@ -1207,21 +1230,10 @@ const LANGS = {
 };
 let currentLang = 'zh';
 
-function renderLangSwitcher(){
-  const el = document.getElementById('langSwitcher');
-  el.innerHTML = Object.keys(LANGS).map(key=>{
-    const active = key===currentLang;
-    return `<button onclick="setLang('${key}')" class="relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 cursor-pointer ${active?'bg-white text-slate-800 shadow-sm':'text-slate-500 hover:text-slate-700'}">
-      ${LANGS[key].label}
-      <span class="w-1.5 h-1.5 rounded-full transition-colors bg-emerald-400"></span>
-    </button>`;
-  }).join('');
-}
-
-// Same LANGS/currentLang state as the Greeting switcher above — one language selection drives
-// both panels (and the phone preview) so editors translate one language at a time across the form.
-function renderFaqLangSwitcher(){
-  const el = document.getElementById('faqLangSwitcher');
+// Shared renderer so Greeting's and FAQ's language switchers can never visually drift apart again -
+// both call this into their own container id, standardized on FAQ's smaller/simpler pill style.
+function renderLangSwitcherInto(elId){
+  const el = document.getElementById(elId);
   if(!el) return;
   el.innerHTML = Object.keys(LANGS).map(key=>{
     const active = key===currentLang;
@@ -1230,6 +1242,11 @@ function renderFaqLangSwitcher(){
     </button>`;
   }).join('');
 }
+function renderLangSwitcher(){ renderLangSwitcherInto('langSwitcher'); }
+
+// Same LANGS/currentLang state as the Greeting switcher above — one language selection drives
+// both panels (and the phone preview) so editors translate one language at a time across the form.
+function renderFaqLangSwitcher(){ renderLangSwitcherInto('faqLangSwitcher'); }
 
 function setLang(key){
   currentLang = key;
@@ -1318,6 +1335,8 @@ renderFaqEditor();
 applyHighlight();
 applyGranularColorsVisibility();
 loadFromSupabase(); // async — overwrites the defaults above with saved data, if any exists for PROJECT_ID
+const menuToggleBtn = document.getElementById('menuToggle');
+if(menuToggleBtn) menuToggleBtn.onclick = () => document.getElementById('avaSidebar').classList.toggle('open');
 </script>
 </body>
 </html>
