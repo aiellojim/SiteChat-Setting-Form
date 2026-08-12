@@ -161,7 +161,7 @@
       <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <div class="mb-5">
           <h3 class="text-base font-semibold text-slate-800">Quick Colors</h3>
-          <p class="text-xs text-slate-400 mt-0.5">The 3 colors most customers need. Changing one updates every matching field below — each field stays individually editable if you need finer control.</p>
+          <p class="text-xs text-slate-400 mt-0.5">The 3 colors most customers need. Changing one updates every matching field.</p>
         </div>
         <div class="grid sm:grid-cols-3 gap-4" id="quickColorRows"></div>
       </div>
@@ -226,7 +226,7 @@
 
         <div class="flex items-center gap-3 mt-5">
           <button onclick="doSave()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors duration-150 cursor-pointer">Save</button>
-          <span id="saveToast" class="fade-toast opacity-0 text-xs text-teal-600 font-medium">Saved ✓ (mockup — no backend)</span>
+          <span id="saveToast" class="fade-toast opacity-0 text-xs text-teal-600 font-medium">Saved ✓</span>
         </div>
       </div>
 
@@ -453,7 +453,25 @@
   </main>
 </div>
 
-<script>
+<script type="module">
+// ---- Supabase (same project + anon key as AVA basic settings / AVA UI settings) ----
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const SUPABASE_URL = 'https://yqoingcpcryrcpnhkjzu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_fiGnl8HwstdP81Eqls6JnQ_YWqmns-5';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// project id is the link token (no login), read from either ?p=<id> (matches AVA's convention,
+// used by hotel-dashboard's copy-link buttons) or a bare UUID in the path (matches the /form/:id
+// vercel.json rewrite already in this repo) - same dual lookup as AVA basic settings' getProjectId().
+function getProjectId(){
+  const params = new URLSearchParams(location.search);
+  const fromQuery = params.get('p');
+  if (fromQuery) return fromQuery;
+  const m = location.pathname.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  return m ? m[0] : null;
+}
+const PROJECT_ID = getProjectId();
+
 const PRESETS = ['#00897b','#0ea5e9','#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#14b8a6','#1a2540','#374151'];
 
 const ICONS = {
@@ -635,17 +653,97 @@ function renderQuickColors(){
   document.getElementById('quickColorRows').innerHTML = QUICK_COLORS.map(quickColorRowHTML).join('');
 }
 
-// The header subtitle is NOT hardcoded to any one hotel - in production this would come from
-// the project record (same lookup pattern as getProjectId() in AVA basic settings). For this
-// standalone mockup it falls back to a ?hotel= URL param, then to no name at all.
-function getProjectNameFromUrl(){
-  const params = new URLSearchParams(location.search);
-  return params.get('hotel') || params.get('project') || null;
-}
-const PROJECT_NAME = getProjectNameFromUrl();
+// The header subtitle is NOT hardcoded to any one hotel - it's filled in from the projects table
+// once loadFromSupabase() resolves (same project record AVA basic settings reads), keyed off
+// PROJECT_ID. Falls back to no name shown if there's no id in the URL or no matching row yet.
+let PROJECT_NAME = null;
 function renderBrandSub(){
   const el = document.getElementById('brandSub');
   el.textContent = (PROJECT_NAME ? PROJECT_NAME + ' · ' : '') + 'Theme & FAQ Configuration';
+}
+
+// ---- Load / save against Supabase, keyed by PROJECT_ID ----
+async function loadFromSupabase(){
+  if(!PROJECT_ID) return;
+  const [projRes, settingsRes, faqRes] = await Promise.all([
+    sb.from('projects').select('id,name').eq('id', PROJECT_ID).maybeSingle(),
+    sb.from('sitechat_settings').select('*').eq('project_id', PROJECT_ID).maybeSingle(),
+    sb.from('sitechat_faq_cards').select('*').eq('project_id', PROJECT_ID).order('sort_order'),
+  ]);
+  if(projRes.error) console.error('load projects failed', projRes.error);
+  if(settingsRes.error) console.error('load sitechat_settings failed', settingsRes.error);
+  if(faqRes.error) console.error('load sitechat_faq_cards failed', faqRes.error);
+
+  if(projRes.data){ PROJECT_NAME = projRes.data.name; }
+  renderBrandSub();
+
+  const settings = settingsRes.data;
+  if(settings){
+    if(settings.bot_name){
+      document.getElementById('botNameInput').value = settings.bot_name;
+      onBotNameInput(settings.bot_name);
+    }
+    if(settings.bot_icon_url){
+      document.getElementById('botIconInput').value = settings.bot_icon_url;
+      onBotIconInput(settings.bot_icon_url);
+    }
+    if(settings.theme && typeof settings.theme === 'object'){
+      Object.keys(settings.theme).forEach(k=>setVar(k, settings.theme[k]));
+    }
+    if(settings.greeting && typeof settings.greeting === 'object'){
+      Object.keys(settings.greeting).forEach(k=>{
+        if(LANGS[k] && settings.greeting[k]) Object.assign(LANGS[k], settings.greeting[k]);
+      });
+    }
+  }
+
+  if(faqRes.data && faqRes.data.length){
+    faqCards = faqRes.data.map(r=>({
+      titles: r.titles && Object.keys(r.titles).length ? r.titles : newFaqCard().titles,
+      questions: Array.isArray(r.questions) && r.questions.length ? r.questions : [newFaqQuestion()],
+    }));
+    currentFaqIndex = 0;
+  }
+
+  renderAll();
+  initGreeting();
+  renderFaqEditor();
+}
+
+// FAQ cards are simplest to fully replace on every save (max 4 cards, single editor at a time) -
+// delete-then-reinsert instead of AVA's diff/insert/update/delete dance for large multi-row lists.
+async function saveToSupabase(){
+  if(!PROJECT_ID) return { ok:false, reason:'no-project-id' };
+  const theme = {};
+  allSections().forEach(s=>s.fields.forEach(f=>{ theme[f.key] = getVar(f.key) || f.def; }));
+  const greeting = {};
+  Object.keys(LANGS).forEach(k=>{ greeting[k] = { welcome: LANGS[k].welcome, hint: LANGS[k].hint }; });
+
+  const settingsPayload = {
+    project_id: PROJECT_ID,
+    bot_name: document.getElementById('botNameInput').value || 'Bot',
+    bot_icon_url: botIconUrl || '',
+    theme, greeting,
+    form_submitted_at: new Date().toISOString(),
+  };
+
+  try{
+    const { error: settingsErr } = await sb.from('sitechat_settings').upsert(settingsPayload);
+    if(settingsErr) throw settingsErr;
+
+    const { error: delErr } = await sb.from('sitechat_faq_cards').delete().eq('project_id', PROJECT_ID);
+    if(delErr) throw delErr;
+
+    if(faqCards.length){
+      const rows = faqCards.map((c,i)=>({ project_id: PROJECT_ID, sort_order:i, titles:c.titles, questions:c.questions }));
+      const { error: insErr } = await sb.from('sitechat_faq_cards').insert(rows);
+      if(insErr) throw insErr;
+    }
+    return { ok:true };
+  } catch(err){
+    console.error('saveToSupabase failed', err);
+    return { ok:false, reason: err.message||String(err) };
+  }
 }
 
 let openRowId = null;
@@ -816,14 +914,30 @@ function setTextSize(key, px){
   renderTextSizeGroup();
 }
 
-function doSave(){
+async function doSave(){
   const toast = document.getElementById('saveToast');
-  toast.style.opacity = '1';
-  setTimeout(()=>{ toast.style.opacity = '0'; }, 1800);
   const hdr = document.getElementById('headerSaveIndicator');
-  if(hdr){
-    hdr.textContent = 'Submitted ✓ (mockup — no backend)';
-    setTimeout(()=>{ hdr.textContent = 'Saved'; }, 2200);
+  if(!PROJECT_ID){
+    toast.textContent = 'No project id in URL — nothing to save to.';
+    toast.style.opacity = '1';
+    setTimeout(()=>{ toast.style.opacity = '0'; toast.textContent = 'Saved ✓'; }, 2200);
+    return;
+  }
+  if(hdr) hdr.textContent = 'Saving…';
+  const result = await saveToSupabase();
+  if(result.ok){
+    toast.textContent = 'Saved ✓';
+    toast.style.opacity = '1';
+    setTimeout(()=>{ toast.style.opacity = '0'; }, 1800);
+    if(hdr){
+      hdr.textContent = 'Submitted ✓';
+      setTimeout(()=>{ hdr.textContent = 'Saved'; }, 2200);
+    }
+  } else {
+    toast.textContent = 'Save failed: ' + (result.reason||'unknown error');
+    toast.style.opacity = '1';
+    setTimeout(()=>{ toast.style.opacity = '0'; toast.textContent = 'Saved ✓'; }, 3000);
+    if(hdr) hdr.textContent = 'Save failed';
   }
 }
 
@@ -1081,6 +1195,7 @@ renderSidebar();
 renderFaqEditor();
 applyHighlight();
 applyGranularColorsVisibility();
+loadFromSupabase(); // async — overwrites the defaults above with saved data, if any exists for PROJECT_ID
 </script>
 </body>
 </html>
