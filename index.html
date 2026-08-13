@@ -570,6 +570,10 @@ const UI_STRINGS = {
     en:'Hotel ID not found for this link - you can still fill out the form, but it will not be saved to the cloud until this is resolved with your Aiello contact.',
     zh:'找不到此連結對應的飯店專案，仍可繼續填寫，但在確認前不會同步至雲端，請與 Aiello 聯繫確認。',
     ja:'このリンクに対応するホテルプロジェクトが見つかりません。引き続きフォームにご記入いただけますが、Aielloの担当者に確認いただくまではクラウドに保存されません。' },
+  banner_connection_error: {
+    en:'Could not connect to the server - working offline for now, your edits won\'t sync until the connection is restored.',
+    zh:'無法連線到伺服器，暫時離線作業，連線恢復前的編輯不會同步。',
+    ja:'サーバーに接続できませんでした。現在はオフラインで作業しています。接続が回復するまで編集内容は同期されません。' },
 
   // Submit modal copy ported verbatim (in meaning) from AVA basic settings' own trilingual
   // renderSubmitConfirmModal()/pick() so the two forms read identically (Jim, 2026-08-13).
@@ -814,14 +818,24 @@ async function loadFromSupabase(){
     return;
   }
   isHydrating = true; // suppress autosave while we populate fields from saved data below
-  const [projRes, settingsRes, faqRes] = await Promise.all([
-    sb.from('projects').select('id,name').eq('id', PROJECT_ID).maybeSingle(),
-    sb.from('sitechat_settings').select('*').eq('project_id', PROJECT_ID).maybeSingle(),
-    sb.from('sitechat_faq_cards').select('*').eq('project_id', PROJECT_ID).order('sort_order'),
-  ]);
-  if(projRes.error) console.error('load projects failed', projRes.error);
-  if(settingsRes.error) console.error('load sitechat_settings failed', settingsRes.error);
-  if(faqRes.error) console.error('load sitechat_faq_cards failed', faqRes.error);
+  let projRes, settingsRes, faqRes;
+  try{
+    [projRes, settingsRes, faqRes] = await Promise.all([
+      sb.from('projects').select('id,name').eq('id', PROJECT_ID).maybeSingle(),
+      sb.from('sitechat_settings').select('*').eq('project_id', PROJECT_ID).maybeSingle(),
+      sb.from('sitechat_faq_cards').select('*').eq('project_id', PROJECT_ID).order('sort_order'),
+    ]);
+    [projRes, settingsRes, faqRes].forEach(r=>{ if(r.error) throw r.error; });
+  } catch(e){
+    // Genuine network/DB failure (not "no id" and not "not found") - same third case AVA basic
+    // settings and AVA UI settings now both handle: show the banner, keep the form usable with
+    // whatever defaults are already on screen, don't leave the hotel staring at nothing (2026-08-13).
+    console.error('loadFromSupabase failed', e);
+    markSaved('error');
+    showBanner('banner_connection_error');
+    isHydrating = false;
+    return;
+  }
 
   // Link has an id, but it doesn't match any project - same as AVA's "not-found" case: still
   // usable, but flagged so nobody mistakes it for a synced, real hotel link.
