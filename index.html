@@ -531,7 +531,7 @@ const UI_STRINGS = {
   qc_welcometext_label: { en:'Welcome Text',         zh:'歡迎詞文字色',        ja:'ウェルカムメッセージの文字色' },
   qc_reset:             { en:'Reset',                zh:'重設',              ja:'リセット' },
   qc_affects_heading:   { en:'Affects',              zh:'影響範圍',           ja:'影響範囲' },
-  qc_primary_affects_1: { en:'Header background',                     zh:'頁首背景',              ja:'ヘッダー背景' },
+  qc_primary_affects_1: { en:'Header background',                     zh:'聊天頂部列背景',          ja:'ヘッダー背景' },
   qc_primary_affects_2: { en:'In-chat welcome card background',       zh:'對話中歡迎卡片背景',      ja:'チャット内ウェルカムカードの背景' },
   qc_primary_affects_3: { en:'FAQ card header bar',                   zh:'常見問題卡片頂部色塊',    ja:'FAQカードのヘッダーバー' },
   qc_primary_affects_4: { en:'Bot message & input text',              zh:'機器人訊息與輸入文字',    ja:'ボットメッセージと入力テキスト' },
@@ -539,11 +539,11 @@ const UI_STRINGS = {
   qc_primary_affects_6: { en:'User message bubble',                  zh:'使用者訊息泡泡',         ja:'ユーザーメッセージバブル' },
   qc_primary_affects_7: { en:'Welcome screen background',             zh:'歡迎畫面背景',           ja:'ウェルカム画面の背景' },
   qc_accent_affects_1:  { en:'Bot avatar & brand icon',                zh:'機器人頭像與品牌圖示',    ja:'ボットアバターとブランドアイコン' },
-  qc_accent_affects_2:  { en:'Header icon',                           zh:'頁首圖示',              ja:'ヘッダーアイコン' },
+  qc_accent_affects_2:  { en:'Header icon',                           zh:'聊天頂部列圖示',          ja:'ヘッダーアイコン' },
   qc_accent_affects_3:  { en:'Welcome screen "Start Chat" button',    zh:'歡迎畫面「開始對話」按鈕', ja:'ウェルカム画面の「チャット開始」ボタン' },
   qc_accent_affects_4:  { en:'FAQ question links',                   zh:'常見問題連結文字',        ja:'FAQ質問リンク' },
-  qc_welcometext_affects_1: { en:'Welcome screen subtitle text',      zh:'歡迎畫面副標文字',        ja:'ウェルカム画面のサブタイトル文字' },
-  qc_welcometext_affects_2: { en:'Chat card body text',               zh:'對話卡片內文文字',        ja:'チャットカードの本文テキスト' },
+  qc_welcometext_affects_1: { en:'Welcome screen subtitle text',      zh:'歡迎詞文字',             ja:'ウェルカムメッセージの文字' },
+  qc_welcometext_affects_2: { en:'Chat card body text',               zh:'對話內歡迎卡片文字',      ja:'チャット内ウェルカムカードの文字' },
 
   faq_title:              { en:'FAQ Cards',          zh:'常見問題卡片',        ja:'FAQカード' },
   faq_desc:               { en:'Set up quick-reply FAQ cards for visitors — up to 4 cards, each shown live in the preview.', zh:'為訪客設定快速回覆的常見問題卡片，最多 4 張卡片，即時顯示在預覽畫面中。', ja:'訪問者向けのクイック返信FAQカードを設定します。最大4枚まで、プレビューにリアルタイムで表示されます。' },
@@ -580,6 +580,7 @@ const UI_STRINGS = {
   submit_submitting:    { en:'Submitting…', zh:'提交中…', ja:'送信中…' },
   submit_done:          { en:'Submitted. Thank you!', zh:'已提交，感謝您的填寫！', ja:'送信されました。ありがとうございます！' },
   submit_ok:            { en:'OK',        zh:'好的',    ja:'OK' },
+  header_submit_btn:    { en:'Submit / Update', zh:'提交 / 更新', ja:'送信・更新' },
 };
 function t(key){
   const entry = UI_STRINGS[key];
@@ -592,6 +593,7 @@ function t(key){
 // need to be repeated explicitly.
 function applyUiLanguage(){
   const setText = (id, key) => { const el = document.getElementById(id); if(el) el.textContent = t(key); };
+  setText('submitBtn', 'header_submit_btn');
   setText('tGreetingTitle', 'greeting_title');
   setText('tGreetingDesc', 'greeting_desc');
   setText('tBotNameLabel', 'botname_label');
