@@ -3,7 +3,8 @@
 單一 `index.html`（無框架、無 build step，`<script type="module">` 因為要 `import` Supabase JS）+
 Tailwind Play CDN + Supabase。單人開發：Jim。GitHub：`aiellojim/SiteChat-Setting-Form`。
 本機：`/Users/jim.chao/SiteChat settings`。部署：Vercel，正式網址
-`https://site-chat-setting-form.vercel.app/`。
+`https://sitechat-settings.aiello.dev/`（原本是 Vercel 預設網域 `site-chat-setting-form.vercel.app`，
+2026-08-14 換成自訂網域；舊網址若還沒解除綁定，理論上仍可訪問，但不要再新產生指向舊網址的連結）。
 
 ## 動手前先讀
 
