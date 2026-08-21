@@ -1248,13 +1248,37 @@ function switchPanel(id){
 // ---- FAQ Cards ----
 // Each card/question holds all 3 languages in one object, so add/remove always operates on a
 // single shared array — card count and question count can never drift between languages.
+// 2026-08-21 換成 ACA Task Creation Test 專案（project_id c313c864-d6f9-4c01-a7d4-d090a5b43f17）
+// 實際填寫過的 4 張卡片內容，當作新專案的預設值（見上面 LANGS 的同一則說明，一樣只在還沒真的
+// 存過表單的專案上顯示，不會蓋掉已存的真實資料）。
 let faqCards = [
-  { titles:{ en:'General FAQ', zh:'常見問題', ja:'よくある質問' },
+  { titles:{ en:'Booking', zh:'官網訂房', ja:'公式予約' },
     questions:[
-      { en:'What are your hours?', zh:'營業時間是？', ja:'営業時間はいつですか？' },
-      { en:'How to reset password?', zh:'如何重設密碼？', ja:'パスワードのリセット方法は？' },
-      { en:'Contact support', zh:'聯絡客服', ja:'サポートに問い合わせる' },
-    ] }
+      { en:'📣 Web-Only Deals', zh:'📣 官網限定優惠', ja:'📣 公式限定特典' },
+      { en:'🏨 Stay Packages', zh:'🏨 本季住房專案', ja:'🏨 宿泊プラン' },
+      { en:'🎁 Member Perks', zh:'🎁 會員專屬好康', ja:'🎁 会員特典' },
+      { en:'🛏️ Room Picks', zh:'🛏️ 入住房型推薦', ja:'🛏️ おすすめ客室' },
+    ] },
+  { titles:{ en:'Trip Extras', zh:'旅程加分', ja:'旅を充実' },
+    questions:[
+      { en:'🌊 Travel Packages', zh:'🌊 精選套裝行程', ja:'🌊 旅パッケージ' },
+      { en:'🤹‍♀️ Featured Experiences', zh:'🤹‍♀️ 館內特色體驗', ja:'🤹‍♀️ 館内体験' },
+      { en:'🚘 Airport Transfer', zh:'🚘 機場接送服務', ja:'🚘 空港送迎' },
+      { en:'🎂 Room Decoration', zh:'🎂 驚喜佈置禮遇', ja:'🎂 客室装飾' },
+    ] },
+  { titles:{ en:'Stay Guide', zh:'入住指南', ja:'滞在ガイド' },
+    questions:[
+      { en:'🏊 Facilities', zh:'🏊 館內設施介紹', ja:'🏊 館内施設' },
+      { en:'🚌 Shuttle Info', zh:'🚌 交通接駁資訊', ja:'🚌 送迎情報' },
+      { en:'📍 Nearby Spots', zh:'📍 周邊景點推薦', ja:'📍 周辺スポット' },
+    ] },
+  { titles:{ en:'Dining Offers', zh:'美食限定', ja:'グルメ' },
+    questions:[
+      { en:'🦞 Lobster Fair', zh:'🦞 季節限定龍蝦海鮮季', ja:'🦞 ロブスターフェア' },
+      { en:'🍰 HARBS Afternoon Tea', zh:'🍰 HARBS 聯名甜點午茶', ja:'🍰 HARBSアフタヌーンティー' },
+      { en:'☕ Breakfast Add-On', zh:'☕ 官網早餐加購優惠', ja:'☕ 朝食追加' },
+      { en:'🍴 Lumière Dining', zh:'🍴 光禾全日餐廳訂位', ja:'🍴 光禾ダイニング' },
+    ] },
 ];
 let currentFaqIndex = 0;
 function newFaqQuestion(){ return { en:'New question', zh:'新問題', ja:'新しい質問' }; }
@@ -1367,19 +1391,21 @@ function faqPrev(){ if(currentFaqIndex <= 0) return; currentFaqIndex--; renderFa
 function faqNext(){ if(currentFaqIndex >= faqCards.length - 1) return; currentFaqIndex++; renderFaqPreview(); }
 
 // ---- Greeting (multi-language) ----
-// Defaults below mirror the "demo2" organization on eb-console (empty per-language fields
-// fall back to a generic greeting/hint at runtime) - shown here pre-filled with that same
-// generic copy so the form isn't blank.
+// 2026-08-21 換成 ACA Task Creation Test 專案（project_id c313c864-d6f9-4c01-a7d4-d090a5b43f17）
+// 實際填寫過的文字內容，當作新專案的預設值（Jim 指示：目前還沒有飯店真的填過這張表單，全部
+// 換掉沒問題）。只換文字，不動圖片/色號 —— 這些預設只在 hydrateFromSupabase 沒抓到真實 DB
+// 資料時才會顯示，一旦某個專案真的存過表單，settings.greeting/faqRes.data 有值就會覆蓋掉這裡，
+// 不會反過來洗掉已存的真實資料（見 hydrateFromSupabase 的 if(settings.greeting...) 判斷）。
 const LANGS = {
   en: { label:'EN', contentLabel:'English Content',
-    welcome:'Hi! I\'m Bot. How can I help you? 👋',
-    hint:'Hey! There\'s a chatbox here to help you 👋' },
+    welcome:'Welcome! Chat with me to discover exclusive website-only offers and personalized recommendations😙💖\n\nI can help you with:\n🎁 Website deals and member benefits\n🛏️ Stay packages and room recommendations\n🍽️ Dining offers and restaurant reservations\n🧳 Travel tips and hotel information',
+    hint:'Explore exclusive website offers ✨ Ask about rooms, dining, and itineraries anytime 💬' },
   zh: { label:'繁中', contentLabel:'繁體中文 內容',
-    welcome:'嗨！我是 Bot，有什麼我能幫忙的嗎？👋',
-    hint:'嘿！這邊有 Chatbox 可以幫你解決問題喔 👋' },
+    welcome:'歡迎和我互動，獲得官網專屬的隱藏版優惠與推薦方案😙💖\n\n我可以協助您：\n🎁  查詢官網優惠與會員好康\n🛏️  探索住房專案與房型推薦\n🍽️  加購餐飲體驗與早餐優惠\n🚗  安排接送服務與驚喜禮遇',
+    hint:'探索官網限定禮遇 ✨ 房型、餐飲與行程即時詢問 💬' },
   ja: { label:'日本語', contentLabel:'日本語コンテンツ',
-    welcome:'こんにちは！Botです。何かお手伝いできることはありますか？👋',
-    hint:'こんにちは！お困りのことがあればチャットでお手伝いします 👋' },
+    welcome:'ようこそ！公式サイト限定の特典やおすすめプランをご案内します😙💖\n\nお手伝いできること：\n🎁 公式サイト限定特典・会員優待の確認\n🛏️ 宿泊プラン・おすすめ客室の検索\n🍽️ レストラン情報の確認\n🧳 旅程やホテル情報の確認',
+    hint:'公式サイト限定特典をチェック ✨ 客室・レストラン・旅程をすぐに質問 💬' },
 };
 let currentLang = 'zh';
 
