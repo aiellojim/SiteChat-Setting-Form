@@ -36,6 +36,21 @@ CLAUDE.md 只放這個表單自己的專屬資訊。
   這個表單就是踩過這個坑之後才確立那條規則的。
 - 手機預覽畫面固定顯示英文，不受 UI 語言切換影響（Jim 的明確決定：預覽是給填表人看效果，不需要
   跟著介面語言翻譯）。
+- 2026-08-27 新增「KMS Permissions」分頁，讀寫既有的 `web_portal_users`（跟 AVA basic settings／
+  ACA basic settings 完全共用同一張表），沒有新增資料表。顯示與編輯歸屬邏輯（`showKms()`／
+  `kmsEditable()`／`kmsOwnerFormName()`，定義在 `BRAND` 常數之後）是全域優先序
+  AVA/GW（AVA basic settings）> ACA basic settings > SiteChat Settings 在這份表單這端的實作：
+  `showKms()` 只認專案是否明確掛了 `"KMS"` 標籤（跟 AVA/GW/ACA 無關），為 false 時整個分頁連同
+  側邊欄項目一起隱藏；`showKms()` 為 true 之後，`kmsEditable()` 才決定「輪到誰」——SiteChat 排在
+  優先序最後一位，所以要同時檢查 AVA、GW、ACA 三個標籤都不存在才可編輯，跟 ACA 只需要檢查
+  AVA/GW 兩個不同（ACA 優先序比 SiteChat 高，不需要知道 SiteChat 存不存在）。唯讀鏡像時的提示
+  文字會用 `kmsOwnerFormName()` 動態代入實際的主編輯表單名稱（AVA Basic Settings 或 ACA Basic
+  Settings），不是寫死其中一個。**安全要求（Jim，2026-08-27 明確交代）**：唯讀狀態下不能有任何
+  寫入 `web_portal_users` 的路徑——`renderKms()` 在不可編輯時整段不渲染 input/select 的事件綁定、
+  也不渲染新增/刪除按鈕；`onKmsFieldInput`/`addKmsUser`/`removeKmsUser` 各自再檢查一次
+  `kmsEditable()`；`saveToSupabase()` 送出前又再檢查一次 `kmsEditable()` 才會組出要送到 Supabase
+  的 diff——三層防護，真正擋下寫入的是最後 `saveToSupabase()` 那一層（前兩層是 UI 層面，理論上
+  防止不了刻意繞過的操作，但正常操作流程下不會走到）。
 
 ## 硬規則
 

@@ -264,6 +264,27 @@
         </div>
       </div>
 
+      <!-- KMS Permissions panel: hidden entirely unless the project has the "KMS" product tag
+           (showKms()); when shown, editable only when SiteChat is the KMS owner per the family's
+           priority order AVA/GW > ACA > SiteChat (kmsEditable()), otherwise a read-only mirror. -->
+      <div id="panel-kms" class="panel">
+        <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <div class="mb-5">
+            <h3 class="text-base font-semibold text-slate-800" id="tKmsTitle">KMS Permissions</h3>
+            <p class="text-xs text-slate-400 mt-0.5" id="tKmsDesc">Knowledge Management System access. Shares the same account as Aiello TMS Portal.</p>
+          </div>
+          <div id="kmsSharedNote" class="hidden text-xs rounded-lg border border-teal-200 bg-teal-50 text-teal-700 px-3 py-2 mb-4"></div>
+          <div id="kmsRefTable" class="mb-5"></div>
+          <div class="flex items-center gap-2 pt-1 pb-3">
+            <div class="flex-1 h-px bg-slate-100"></div>
+            <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider px-1" id="tKmsUserListTitle">User List</span>
+            <div class="flex-1 h-px bg-slate-100"></div>
+          </div>
+          <p id="kmsUserNote" class="text-[11px] text-slate-400 mb-3"></p>
+          <div id="tbl-kms"></div>
+        </div>
+      </div>
+
     </div>
 
     <!-- RIGHT: live preview -->
@@ -511,6 +532,7 @@ const UI_STRINGS = {
   nav_greeting:        { en:'Greeting',              zh:'問候語設定',         ja:'挨拶設定' },
   nav_theme:           { en:'Chat Theme & Colors',   zh:'聊天主題與色彩',      ja:'チャットテーマとカラー' },
   nav_faq:             { en:'FAQ Cards',             zh:'常見問題卡片',        ja:'FAQカード' },
+  nav_kms:             { en:'KMS Permissions',       zh:'KMS 權限設定',        ja:'KMS権限設定' },
 
   greeting_title:       { en:'Greeting',             zh:'問候語',             ja:'挨拶' },
   greeting_desc:        { en:'Bot name, welcome message and hint bubble per language.', zh:'各語言的機器人名稱、歡迎詞與提示詞泡泡。', ja:'言語ごとのボット名・歓迎メッセージ・ヒントバブル。' },
@@ -556,6 +578,22 @@ const UI_STRINGS = {
   faq_question_placeholder: { en:'Question text',    zh:'問題內容',           ja:'質問内容' },
   faq_drag_title:          { en:'Drag to reorder',   zh:'拖曳以重新排序',       ja:'ドラッグして並べ替え' },
   faq_add_question_btn:    { en:'+ Add question',    zh:'+ 新增問題',          ja:'+ 質問を追加' },
+
+  kms_title:            { en:'KMS Permissions', zh:'權限設定（KMS）', ja:'KMS権限設定' },
+  kms_desc:             { en:'Knowledge Management System access. Shares the same account as Aiello TMS Portal.', zh:'知識管理系統存取權限，與 Aiello TMS Portal 共用同一組帳號。', ja:'ナレッジ管理システムのアクセス権限です。Aiello TMS Portalと同じアカウントを共有します。' },
+  // {form} gets replaced with whichever sibling form actually owns editing for this project
+  // (kmsOwnerFormName()) - SiteChat can be mirroring either AVA basic settings or ACA basic
+  // settings depending on which products are selected, so this can't be a fixed string.
+  kms_shared_note:      { en:'This project is also managed from {form}, which is the primary editor for this list — shown here read-only.', zh:'此專案同時可從 {form} 管理，該表單為此名單的主要編輯端，這裡僅供顯示。', ja:'このプロジェクトは{form}からも管理されており、そちらがこのリストの主な編集先です。ここでは表示のみとなります。' },
+  kms_ref_title:        { en:'KMS Level Reference', zh:'KMS 權限等級參考', ja:'KMS権限レベル早見表' },
+  kms_ref_level:        { en:'KMS Level', zh:'KMS 權限', ja:'KMS権限' },
+  kms_ref_permission:   { en:'Permission', zh:'權限說明', ja:'権限内容' },
+  kms_userlist_title:   { en:'User List', zh:'使用者名單', ja:'ユーザー一覧' },
+  kms_user_note:        { en:'Username must use English letters and numbers only. If a username is already taken, a number will be appended automatically. After sign-up, an email with the portal URL, ID and default password will be sent, and the user must change the password at first login.', zh:'使用者帳號限英文及數字；若帳號已被使用，將自動於帳號後加數字。申請完成後將寄送含後台 URL、帳號、預設密碼之郵件，第一次登入需變更密碼。', ja:'ユーザー名は英数字のみ使用できます。既に使用されている場合は自動的に数字が付加されます。登録完了後、管理画面URL・ID・初期パスワードを記載したメールが送信され、初回ログイン時にパスワードの変更が必要です。' },
+  col_kms_email:        { en:'Email', zh:'電子郵件', ja:'メールアドレス' },
+  col_kms_userid:       { en:'Username', zh:'帳號', ja:'ユーザー名' },
+  col_kms_level:        { en:'KMS Level', zh:'KMS 權限等級', ja:'KMS権限レベル' },
+  add_kms_btn:          { en:'+ Add User', zh:'+ 新增使用者', ja:'+ ユーザーを追加' },
 
   preview_label:   { en:'Live Preview',    zh:'即時預覽',   ja:'ライブプレビュー' },
   editing_badge:   { en:'Editing area',    zh:'編輯區域',   ja:'編集エリア' },
@@ -613,6 +651,9 @@ function applyUiLanguage(){
   setText('tQcDesc', 'qc_desc');
   setText('tFaqTitle', 'faq_title');
   setText('tFaqDesc', 'faq_desc');
+  setText('tKmsTitle', 'kms_title');
+  setText('tKmsDesc', 'kms_desc');
+  setText('tKmsUserListTitle', 'kms_userlist_title');
   setText('tPreviewLabel', 'preview_label');
   setText('editingBadge', 'editing_badge');
   const modeBadgeEl = document.getElementById('modeBadge');
@@ -620,6 +661,7 @@ function applyUiLanguage(){
   renderSidebar();
   renderQuickColors();
   renderFaqEditor();
+  renderKms();
   if(currentBannerKey) showBanner(currentBannerKey);
   if(submitModalState) renderSubmitConfirmModal();
 }
@@ -707,6 +749,147 @@ const ADVANCED = [
 ];
 const BRAND = { id:'brandColor', icon:'brush', label:'Brand Color', desc:'One color drives all CTAs and the bot identity: Send button · User bubble · Start-Chat button · Header & chat avatar · Focus ring. Decorative surfaces (FAQ cards, welcome banner gradient) keep theme defaults — fine-tune below.', mode:'chat', highlight:['pv-header','pv-inputbar','pv-usermsg'],
   fields:[ {key:'--brand', label:'Brand Color', sub:'', def:'#c4a060'} ] };
+
+// ---- KMS Permissions (shared web_portal_users table with AVA basic settings / ACA basic
+// settings) - 2026-08-27, Jim. This form is usually bundled with AVA/ACA/GW, but doesn't have to
+// be, so it needs its own copy of the same ownership logic those two forms already use. Global
+// priority order for who owns editing web_portal_users when more than one product is selected
+// (see aiello-forms-spec.md): AVA/GW (AVA basic settings) > ACA basic settings > SiteChat
+// Settings. SiteChat is last in the chain, so it must check ALL THREE higher-priority tags
+// (AVA, GW, ACA) before ever considering itself the editable owner - unlike ACA, which only
+// ever needs to check AVA/GW since ACA outranks SiteChat.
+let PRODUCTS = [];
+function hasAva(){ return PRODUCTS.includes('AVA'); }
+function hasGW(){ return PRODUCTS.includes('GW'); }
+function hasACA(){ return PRODUCTS.includes('ACA'); }
+// Whether the KMS Permissions tab exists at all - requires the explicit "KMS" product tag,
+// independent of AVA/GW/ACA (KMS is sold separately; having those products doesn't imply a KMS
+// account is actually provisioned).
+function showKms(){ return PRODUCTS.includes('KMS'); }
+// Whether THIS form is the primary editor (vs. a read-only mirror) once the tab is shown.
+function kmsEditable(){ return !(hasAva() || hasGW() || hasACA()); }
+// Which sibling form is the real editor, for the read-only-mirror note's {form} placeholder.
+function kmsOwnerFormName(){
+  if(hasAva() || hasGW()) return 'AVA Basic Settings';
+  if(hasACA()) return 'ACA Basic Settings';
+  return '';
+}
+const KMS_LEVELS = [
+  { v:'Publish', en:'Publish', zh:'發佈', ja:'公開' },
+  { v:'Edit', en:'Edit', zh:'編輯', ja:'編集' },
+];
+// Same reference content as AVA basic settings' / ACA basic settings' KMS Level Reference table.
+const KMS_PERMISSION_DETAIL = [
+  { key:'Publish', en:'Publish', zh:'發佈', ja:'公開',
+    desc:{ en:'Can publish updated knowledge cards and change the content of the live database.', zh:'可以發布更新後的知識卡，並變更正式資料庫內容。', ja:'更新されたナレッジカードを公開し、本番データベースの内容を変更できます。' } },
+  { key:'Edit', en:'Edit', zh:'編輯', ja:'編集',
+    desc:{ en:'Can edit knowledge card content, but cannot publish changes to the live database.', zh:'可以編輯知識卡內容，但無法將變更發布至正式資料庫。', ja:'ナレッジカードの内容を編集できますが、変更を本番データベースに公開することはできません。' } },
+];
+const uid = () => crypto.randomUUID();
+let kmsUsers = [];
+// Snapshot of the last state actually written to Supabase, used by diffRepeater() below to send
+// only real changes. Deliberately separate from any "loaded" flag - see saveToSupabase() for why
+// this must never be populated (and the diff must never run) unless kmsEditable() is true.
+let lastSyncedKmsUsers = null;
+function snapshotKmsUsers(){ return JSON.parse(JSON.stringify(kmsUsers)); }
+
+// Ported from ACA basic settings' diffRepeater() - computes insert/update/delete ops by comparing
+// two arrays keyed on client-generated `_id`, so only genuinely-changed fields get sent.
+function diffRepeater(prevArr, curArr, table, mapFn){
+  prevArr = prevArr||[]; curArr = curArr||[];
+  const prevById = {}; prevArr.forEach((r,i)=>{ prevById[r._id] = {row:r, idx:i}; });
+  const curIds = {}; curArr.forEach(r=>{ curIds[r._id]=true; });
+  const ops = [];
+  curArr.forEach((r,i)=>{
+    const prevEntry = prevById[r._id];
+    const payload = Object.assign({}, mapFn(r), {sort_order:i});
+    if(!prevEntry){
+      ops.push(sb.from(table).insert(Object.assign({}, payload, {id:r._id})).throwOnError());
+    } else {
+      const prevPayload = Object.assign({}, mapFn(prevEntry.row), {sort_order:prevEntry.idx});
+      const changed = {}; let anyChanged = false;
+      Object.keys(payload).forEach(k=>{ if(JSON.stringify(payload[k])!==JSON.stringify(prevPayload[k])){ changed[k]=payload[k]; anyChanged=true; } });
+      if(anyChanged) ops.push(sb.from(table).update(changed).eq('id', r._id).throwOnError());
+    }
+  });
+  prevArr.forEach(r=>{ if(!curIds[r._id]) ops.push(sb.from(table).delete().eq('id', r._id).throwOnError()); });
+  return ops;
+}
+
+function renderKmsRefTable(){
+  const el = document.getElementById('kmsRefTable');
+  if(!el) return;
+  el.innerHTML = `<table class="w-full text-xs border-collapse rounded-lg overflow-hidden">
+    <thead><tr>
+      <th class="bg-teal-600 text-white px-3 py-2 text-center font-semibold">${t('kms_ref_level')}</th>
+      <th class="bg-teal-600 text-white px-3 py-2 text-center font-semibold">${t('kms_ref_permission')}</th>
+    </tr></thead>
+    <tbody>${KMS_PERMISSION_DETAIL.map((r,i)=>`
+      <tr class="${i%2===1?'bg-slate-50':'bg-white'}">
+        <td class="px-3 py-2 text-center font-semibold text-teal-700 border-b border-slate-100">${r[uiLang]||r.en}</td>
+        <td class="px-3 py-2 text-slate-600 border-b border-slate-100">${r.desc[uiLang]||r.desc.en}</td>
+      </tr>`).join('')}</tbody></table>`;
+}
+
+// Renders both the reference table and the user list. When !kmsEditable(), every input/select is
+// `disabled` and there is no add/remove button anywhere in the markup - no event handler in this
+// read-only branch ever touches `kmsUsers`, so there is no code path that can mutate it here.
+// onKmsFieldInput/addKmsUser/removeKmsUser below double-check kmsEditable() again regardless, and
+// saveToSupabase() checks it a third time immediately before it would ever talk to Supabase - see
+// the comment there for why that third check is the one that actually matters.
+function renderKms(){
+  if(!document.getElementById('tbl-kms')) return; // panel markup not in the DOM yet
+  renderKmsRefTable();
+  const editable = kmsEditable();
+  const sharedNote = document.getElementById('kmsSharedNote');
+  if(sharedNote){
+    sharedNote.classList.toggle('hidden', editable);
+    sharedNote.textContent = t('kms_shared_note').replace('{form}', kmsOwnerFormName());
+  }
+  const userNoteEl = document.getElementById('kmsUserNote');
+  if(userNoteEl) userNoteEl.textContent = t('kms_user_note');
+  const wrap = document.getElementById('tbl-kms');
+  const disabledCls = 'disabled:bg-slate-50 disabled:text-slate-400';
+  const inputCls = `w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-[13px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 ${disabledCls}`;
+  const rows = kmsUsers.map((r,i)=>`
+    <tr>
+      <td class="py-1.5 pr-2"><input type="text" ${editable?'':'disabled'} value="${escapeAttr(r.email)}" oninput="onKmsFieldInput(${i},'email',this.value)" class="${inputCls}"></td>
+      <td class="py-1.5 px-2"><input type="text" ${editable?'':'disabled'} value="${escapeAttr(r.username)}" oninput="onKmsFieldInput(${i},'username',this.value)" class="${inputCls}"></td>
+      <td class="py-1.5 px-2">
+        <select ${editable?'':'disabled'} onchange="onKmsFieldInput(${i},'kmsLevel',this.value)" class="${inputCls}">
+          ${KMS_LEVELS.map(o=>`<option value="${o.v}" ${r.kmsLevel===o.v?'selected':''}>${o[uiLang]||o.en}</option>`).join('')}
+        </select>
+      </td>
+      <td class="py-1.5 pl-2 text-center w-8">${editable ? `<button type="button" onclick="removeKmsUser(${i})" class="text-slate-300 hover:text-red-500 transition-colors cursor-pointer px-1">✕</button>` : ''}</td>
+    </tr>`).join('');
+  wrap.innerHTML = `<table class="w-full text-xs border-collapse">
+    <thead><tr class="text-left text-[11px] text-slate-400">
+      <th class="pb-1.5 pr-2 font-medium">${t('col_kms_email')}</th>
+      <th class="pb-1.5 px-2 font-medium">${t('col_kms_userid')}</th>
+      <th class="pb-1.5 px-2 font-medium">${t('col_kms_level')}</th>
+      <th class="pb-1.5 pl-2"></th>
+    </tr></thead>
+    <tbody>${rows}</tbody></table>
+    ${editable ? `<button type="button" onclick="addKmsUser()" class="mt-3 px-4 py-2 border border-dashed border-slate-300 text-slate-500 rounded-lg text-sm font-medium hover:border-teal-400 hover:text-teal-600 transition-colors cursor-pointer w-full">${t('add_kms_btn')}</button>` : ''}`;
+}
+function onKmsFieldInput(i, key, value){
+  if(!kmsEditable()) return; // mirror mode never wires this up, but never trust the DOM alone
+  if(!kmsUsers[i]) return;
+  kmsUsers[i][key] = value;
+  scheduleAutosave();
+}
+function addKmsUser(){
+  if(!kmsEditable()) return;
+  kmsUsers.push({ _id:uid(), email:'', username:'', kmsLevel:'Publish', portalLevel:'Level-1', isAdmin:false });
+  renderKms();
+  scheduleAutosave();
+}
+function removeKmsUser(i){
+  if(!kmsEditable()) return;
+  kmsUsers.splice(i,1);
+  renderKms();
+  scheduleAutosave();
+}
 
 // Front-end-only visibility switch: when false, the whole granular "Chat Theme & Colors" card
 // (Custom Colors, Text Size, Inside the Chat, On Your Website, Advanced) is hidden from customers.
@@ -818,14 +1001,15 @@ async function loadFromSupabase(){
     return;
   }
   isHydrating = true; // suppress autosave while we populate fields from saved data below
-  let projRes, settingsRes, faqRes;
+  let projRes, settingsRes, faqRes, kmsRes;
   try{
-    [projRes, settingsRes, faqRes] = await Promise.all([
-      sb.from('projects').select('id,name').eq('id', PROJECT_ID).maybeSingle(),
+    [projRes, settingsRes, faqRes, kmsRes] = await Promise.all([
+      sb.from('projects').select('id,name,products').eq('id', PROJECT_ID).maybeSingle(),
       sb.from('sitechat_settings').select('*').eq('project_id', PROJECT_ID).maybeSingle(),
       sb.from('sitechat_faq_cards').select('*').eq('project_id', PROJECT_ID).order('sort_order'),
+      sb.from('web_portal_users').select('*').eq('project_id', PROJECT_ID).order('sort_order'),
     ]);
-    [projRes, settingsRes, faqRes].forEach(r=>{ if(r.error) throw r.error; });
+    [projRes, settingsRes, faqRes, kmsRes].forEach(r=>{ if(r.error) throw r.error; });
   } catch(e){
     // Genuine network/DB failure (not "no id" and not "not found") - same third case AVA basic
     // settings and AVA UI settings now both handle: show the banner, keep the form usable with
@@ -844,8 +1028,21 @@ async function loadFromSupabase(){
     showBanner('banner_hotel_not_found');
   } else {
     PROJECT_NAME = projRes.data.name;
+    PRODUCTS = projRes.data.products || [];
   }
   renderBrandSub();
+
+  kmsUsers = (kmsRes.data||[]).map(r=>({ _id:r.id, email:r.email||'', username:r.username||'', kmsLevel:r.kms_level||'Publish', portalLevel:r.portal_level||'Level-1', isAdmin:!!r.is_admin }));
+  lastSyncedKmsUsers = snapshotKmsUsers();
+  // PRODUCTS is only known after this resolves, so showKms() may flip the KMS tab's visibility
+  // compared to the pre-load render - refresh the sidebar now, and bail out of the KMS panel if
+  // it's no longer visible (guards a stale deep-link landing straight on 'kms').
+  if(activePanel==='kms' && !showKms()) activePanel = 'greeting';
+  renderSidebar();
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const activeTarget = document.getElementById('panel-'+activePanel);
+  if(activeTarget) activeTarget.classList.add('active');
+  renderKms();
 
   const settings = settingsRes.data;
   if(settings){
@@ -910,6 +1107,21 @@ async function saveToSupabase(){
       const { error: insErr } = await sb.from('sitechat_faq_cards').insert(rows);
       if(insErr) throw insErr;
     }
+
+    // SAFETY: this is the one gate that actually matters (2026-08-27, Jim explicitly required
+    // zero write path from the read-only mirror state). The UI never wires up inputs/add/remove
+    // in mirror mode, but this check does NOT rely on that - it re-derives kmsEditable() fresh
+    // from PRODUCTS right here, at the moment of the actual network write, independent of
+    // whatever the DOM currently looks like. If this form isn't the KMS owner, `kmsUsers` is
+    // simply never diffed or sent, full stop - lastSyncedKmsUsers also stays untouched so a later
+    // ownership change (e.g. AVA gets removed from the project) starts its diff from the real
+    // last-synced state instead of silently adopting whatever was sitting in the mirror.
+    if(kmsEditable()){
+      const kmsOps = diffRepeater(lastSyncedKmsUsers, kmsUsers, 'web_portal_users', r=>({project_id:PROJECT_ID, email:r.email, username:r.username, kms_level:r.kmsLevel, portal_level:r.portalLevel||'Level-1', is_admin:!!r.isAdmin}));
+      if(kmsOps.length) await Promise.all(kmsOps);
+      lastSyncedKmsUsers = snapshotKmsUsers();
+    }
+
     return { ok:true };
   } catch(err){
     console.error('saveToSupabase failed', err);
@@ -1218,13 +1430,19 @@ const NAV_ITEMS = [
   { id:'greeting', labelKey:'nav_greeting' },
   { id:'theme', labelKey:'nav_theme' },
   { id:'faq', labelKey:'nav_faq' },
+  { id:'kms', labelKey:'nav_kms' },
 ];
+// KMS tab only appears at all when the project has the "KMS" product tag (showKms()) - see the
+// ownership block above BRAND for the full priority rule.
+function visibleNavItems(){
+  return NAV_ITEMS.filter(item => item.id!=='kms' || showKms());
+}
 
 function renderSidebar(){
   const el = document.getElementById('avaSidebar');
   // "Chat Widget" group label stays hardcoded English on purpose (Jim, 2026-08-13) - only the
   // individual nav item labels below follow uiLang.
-  el.innerHTML = '<div class="nav-group-label">Chat Widget</div>' + NAV_ITEMS.map((item, i)=>`
+  el.innerHTML = '<div class="nav-group-label">Chat Widget</div>' + visibleNavItems().map((item, i)=>`
     <button class="nav-item ${activePanel===item.id?'active':''}" onclick="switchPanel('${item.id}')">
       <span class="num">${i+1}</span>
       <span class="label">${t(item.labelKey)}</span>
@@ -1238,6 +1456,7 @@ function switchPanel(id){
   if(target) target.classList.add('active');
   if(id !== 'theme'){ openRowId = null; }
   if(id === 'faq'){ setMode('chat'); }
+  if(id === 'kms'){ renderKms(); }
   renderSidebar();
   renderAll();
   applyHighlight();
@@ -1516,6 +1735,7 @@ Object.assign(window, {
   addFaqCard, removeFaqCard, updateFaqTitle, addFaqQuestion, removeFaqQuestion, updateFaqQuestion,
   faqPrev, faqNext, faqDragStart, faqDragOver, faqDragLeave, faqDrop, faqDragEnd,
   setQuickColor, resetQuickColor, quickColorCurrent, QUICK_COLORS, getVar,
+  onKmsFieldInput, addKmsUser, removeKmsUser,
 });
 
 // init
@@ -1525,6 +1745,7 @@ renderAll();
 initGreeting();
 renderSidebar();
 renderFaqEditor();
+renderKms();
 applyHighlight();
 applyGranularColorsVisibility();
 applyUiLanguage();
