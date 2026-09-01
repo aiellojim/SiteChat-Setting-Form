@@ -25,6 +25,14 @@ CLAUDE.md 只放這個表單自己的專屬資訊。
 - 資料表：`sitechat_settings`（singleton，PK 是 `project_id`，存 `bot_name`／`bot_icon_url`／
   `theme` jsonb／`greeting` jsonb／`form_submitted_at`）、`sitechat_faq_cards`（可重複列表，
   `project_id`＋`sort_order`，存 `titles`／`questions` 兩個 jsonb）。
+- `bot_name` 2026-09-01 從單一字串改成 `{en,zh,ja}` 三語 jsonb（migration
+  `sitechat_bot_name_to_jsonb`，既有字串值會被回填進三個語言，不會遺失）——起因是 eb-console 推送
+  功能要求 bot_name 三語可以不同（跟 eb-console 自己的 `bot_name` 欄位形狀一致，locale code →
+  文案），Jim 明確要求表單前端、資料結構都要比照。前端把 Bot Name 欄位從「內容語言」分隔線上方
+  （語言中立區）移到下方，跟 Welcome Message／Hint Text 並排，用同一套 `LANGS[currentLang].botName`
+  機制（`syncBotNamePreview()` 是切語言分頁時刷新預覽用、不觸發 autosave；`onBotNameInput()` 打字
+  時寫回 `LANGS` 並觸發 autosave，兩者共用同一個渲染函式避免邏輯分裂）。Bot Icon URL 維持語言中立，
+  留在分隔線上方。
 - `theme` jsonb 是純平鋪物件，key 就是 CSS 變數名稱（含開頭 `--`），value 幾乎都是 hex 色碼，只有
   `--welcome-bg` 是完整的 `linear-gradient(...)` 字串——這個形狀是刻意設計成可以直接匯入/匯出整包給
   外部系統對接用，改動前先確認不會破壞這個「key = CSS 變數名稱」的直接對應關係。

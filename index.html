@@ -129,6 +129,10 @@
         </div>
 
         <div class="space-y-4">
+          <!-- Bot Name is per-language (2026-09-01, Jim: matches eb-console's bot_name shape,
+               which is a locale-code -> text dict, not a single flat string) but stays in its
+               original position/order (Jim, 2026-09-01: don't move it) - the language-content
+               divider that used to separate it from Bot Icon has been removed entirely. -->
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1.5" id="tBotNameLabel">Bot Name</label>
             <div class="flex items-center gap-2 mt-1">
@@ -143,12 +147,6 @@
             <label class="block text-sm font-medium text-slate-600 mb-1" id="tBotIconLabel">Bot Icon URL</label>
             <p class="text-[11px] text-slate-400 mb-1.5" id="tBotIconDesc">Shown as the bot avatar — paste an image link.</p>
             <input id="botIconInput" type="text" placeholder="https://example.com/avatar.png" oninput="onBotIconInput(this.value)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors">
-          </div>
-
-          <div class="flex items-center gap-2 pt-1">
-            <div class="flex-1 h-px bg-slate-100"></div>
-            <span id="langContentLabel" class="text-[10px] text-slate-400 font-medium uppercase tracking-wider px-1">繁體中文 內容</span>
-            <div class="flex-1 h-px bg-slate-100"></div>
           </div>
 
           <div>
@@ -1050,9 +1048,13 @@ async function loadFromSupabase(){
 
   const settings = settingsRes.data;
   if(settings){
-    if(settings.bot_name){
-      document.getElementById('botNameInput').value = settings.bot_name;
-      onBotNameInput(settings.bot_name);
+    // bot_name is per-language jsonb since 2026-09-01 (migration backfills any pre-existing plain
+    // string into all three locales). Defensive fallback keeps old string rows working if this ever
+    // runs before the migration lands on a given environment.
+    if(settings.bot_name && typeof settings.bot_name === 'object'){
+      Object.keys(LANGS).forEach(k=>{ if(settings.bot_name[k]) LANGS[k].botName = settings.bot_name[k]; });
+    } else if(typeof settings.bot_name === 'string' && settings.bot_name){
+      Object.keys(LANGS).forEach(k=>{ LANGS[k].botName = settings.bot_name; });
     }
     if(settings.bot_icon_url){
       document.getElementById('botIconInput').value = settings.bot_icon_url;
@@ -1090,10 +1092,12 @@ async function saveToSupabase(){
   allSections().forEach(s=>s.fields.forEach(f=>{ theme[f.key] = getVar(f.key) || f.def; }));
   const greeting = {};
   Object.keys(LANGS).forEach(k=>{ greeting[k] = { welcome: LANGS[k].welcome, hint: LANGS[k].hint }; });
+  const botName = {};
+  Object.keys(LANGS).forEach(k=>{ botName[k] = LANGS[k].botName || 'Bot'; });
 
   const settingsPayload = {
     project_id: PROJECT_ID,
-    bot_name: document.getElementById('botNameInput').value || 'Bot',
+    bot_name: botName,
     bot_icon_url: botIconUrl || '',
     theme, greeting,
     form_submitted_at: new Date().toISOString(),
@@ -1620,13 +1624,13 @@ function faqNext(){ if(currentFaqIndex >= faqCards.length - 1) return; currentFa
 // 資料時才會顯示，一旦某個專案真的存過表單，settings.greeting/faqRes.data 有值就會覆蓋掉這裡，
 // 不會反過來洗掉已存的真實資料（見 hydrateFromSupabase 的 if(settings.greeting...) 判斷）。
 const LANGS = {
-  en: { label:'EN', contentLabel:'English Content',
+  en: { label:'EN', contentLabel:'English Content', botName:'Bot',
     welcome:'Welcome! Chat with me to discover exclusive website-only offers and personalized recommendations😙💖\n\nI can help you with:\n🎁 Website deals and member benefits\n🛏️ Stay packages and room recommendations\n🍽️ Dining offers and restaurant reservations\n🧳 Travel tips and hotel information',
     hint:'Explore exclusive website offers ✨ Ask about rooms, dining, and itineraries anytime 💬' },
-  zh: { label:'繁中', contentLabel:'繁體中文 內容',
+  zh: { label:'繁中', contentLabel:'繁體中文 內容', botName:'Bot',
     welcome:'歡迎和我互動，獲得官網專屬的隱藏版優惠與推薦方案😙💖\n\n我可以協助您：\n🎁  查詢官網優惠與會員好康\n🛏️  探索住房專案與房型推薦\n🍽️  加購餐飲體驗與早餐優惠\n🚗  安排接送服務與驚喜禮遇',
     hint:'探索官網限定禮遇 ✨ 房型、餐飲與行程即時詢問 💬' },
-  ja: { label:'日本語', contentLabel:'日本語コンテンツ',
+  ja: { label:'日本語', contentLabel:'日本語コンテンツ', botName:'Bot',
     welcome:'ようこそ！公式サイト限定の特典やおすすめプランをご案内します😙💖\n\nお手伝いできること：\n🎁 公式サイト限定特典・会員優待の確認\n🛏️ 宿泊プラン・おすすめ客室の検索\n🍽️ レストラン情報の確認\n🧳 旅程やホテル情報の確認',
     hint:'公式サイト限定特典をチェック ✨ 客室・レストラン・旅程をすぐに質問 💬' },
 };
@@ -1654,9 +1658,10 @@ function setLang(key){
   currentLang = key;
   renderLangSwitcher();
   renderFaqLangSwitcher();
-  document.getElementById('langContentLabel').textContent = LANGS[key].contentLabel;
+  document.getElementById('botNameInput').value = LANGS[key].botName;
   document.getElementById('welcomeMsgInput').value = LANGS[key].welcome;
   document.getElementById('hintTextInput').value = LANGS[key].hint;
+  syncBotNamePreview(LANGS[key].botName);
   syncPreviewFromGreeting();
   renderFaqEditor();
 }
@@ -1667,10 +1672,19 @@ function onGreetingFieldInput(field, value){
   scheduleAutosave();
 }
 
+// Bot Name is per-language (2026-09-01) - stored on LANGS[currentLang].botName, same pattern as
+// welcome/hint. syncBotNamePreview() is split out so setLang()/initGreeting() can refresh the
+// preview when switching language tabs without re-triggering an autosave (mirrors why
+// setLang() sets welcomeMsgInput/hintTextInput directly instead of calling onGreetingFieldInput).
+function syncBotNamePreview(name){
+  const display = name || 'Bot';
+  document.querySelectorAll('.js-botname').forEach(el=>el.textContent=display);
+  document.getElementById('botNameInitial').textContent = display.trim().charAt(0).toUpperCase() || 'M';
+}
 function onBotNameInput(value){
   const name = value || 'Bot';
-  document.querySelectorAll('.js-botname').forEach(el=>el.textContent=name);
-  document.getElementById('botNameInitial').textContent = name.trim().charAt(0).toUpperCase() || 'M';
+  LANGS[currentLang].botName = name;
+  syncBotNamePreview(name);
   scheduleAutosave();
 }
 
@@ -1720,9 +1734,10 @@ function onBotIconInput(value){
 function initGreeting(){
   renderLangSwitcher();
   renderFaqLangSwitcher();
-  document.getElementById('langContentLabel').textContent = LANGS[currentLang].contentLabel;
+  document.getElementById('botNameInput').value = LANGS[currentLang].botName;
   document.getElementById('welcomeMsgInput').value = LANGS[currentLang].welcome;
   document.getElementById('hintTextInput').value = LANGS[currentLang].hint;
+  syncBotNamePreview(LANGS[currentLang].botName);
   syncPreviewFromGreeting();
   renderBotAvatars();
 }
